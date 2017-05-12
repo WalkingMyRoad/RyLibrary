@@ -1,0 +1,205 @@
+package com.ist.rylibrary.base.controller;
+
+import android.app.Activity;
+
+
+import com.ist.rylibrary.base.module.BaseActivity;
+import com.ist.rylibrary.base.util.BaseLogUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by minyuchun on 2016/10/20.
+ */
+
+public class ActivityController {
+
+    private static ActivityController sActivityController;
+    /**日志输出*/
+    public BaseLogUtil log;
+
+    /**程序中的activity组*/
+    private List<BaseActivity> activities=new ArrayList<BaseActivity>();
+
+    public static ActivityController getInstance(){
+        if(sActivityController == null){
+            sActivityController = new ActivityController();
+        }
+        return sActivityController;
+    }
+
+    /**
+     * 初始化 Activity 控制类
+     *   初始化 日志;
+     */
+    private ActivityController(){
+        log=new BaseLogUtil(ActivityController.class);
+    }
+
+    /**
+     * 新增单个activity
+     * Activity 控制类中添加新的 activity 页面 每个Activity在onCreate方法中必须添加
+     * 在公共库文件中BaseActivity中的onCreate文件中有集成，所属类以此为父类不用添加
+     * @param activity
+     */
+    public void addActivity(BaseActivity activity) {
+        try{
+            log.d("新增activity "+activity.getClass().getSimpleName());
+            activities.add(activity);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 删除单个activity
+     * Activity 控制类中删除已有 activity 页面 每个Activity在onDestroy方法中必须添加
+     * 在公共库文件中BaseActivity中的onDestroy文件中有集成，所属类以此为父类不用添加
+     * @param activity
+     */
+    public void removeActivity(BaseActivity activity) {
+        try{
+            log.d("删除activity "+activity.getClass().getSimpleName());
+            activities.remove(activity);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 停止所有缓存中的activity
+     * 可以作为退出程序使用，当需要退出程序时可调用此方法
+     */
+    public void finishAll() {
+        try{
+            for (BaseActivity activity : activities) {
+                if (!activity.isFinishing()) {
+                    activity.finish();
+                }
+            }
+            log.d("删除所有的activity "+activities.size());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 删除传入 activity 之上的所有activity
+     * 如返回首页需要返回时可以调用
+     * @param activity  参数为activity
+     */
+    public void finishAboveActivity(BaseActivity activity){
+        finishAboveActivity(activity.getClass());
+    }
+
+    /**
+     * 删除activity 之上的所有activity
+     * 如返回首页需要返回时可以调用
+     * @param clazz  clazz
+     */
+    public void finishAboveActivity(Class clazz) {
+        try {
+            if (clazz.newInstance() instanceof BaseActivity) {
+                log.d("删除页面");
+                finishAboveActivity(clazz.getSimpleName());
+            }
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 删除activity 之上的所有activity
+     * 如返回首页需要返回时可以调用
+     * @param activityName  传入字符串名字
+     */
+    public void finishAboveActivity(String activityName){
+        try{
+            log.d("删除页面 "+activityName);
+            for (int i = activities.size()-1 ;i >= 0; i--){
+                if(activities.get(i).getClass().getSimpleName().contains(activityName)){
+                    return;
+                }else {
+                    activities.get(i).finish();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            log.d("删除了 "+activityName+" 之上的页面 剩余页面数量 "+activities.toString());
+        }
+    }
+
+    /***
+     * 删除最上端的activity
+     * 鄙夫说返回时 调用退出当前顶层的 activity
+     */
+    public void finishTopActivity(){
+        try{
+            if(activities.size()>1){
+                activities.get(activities.size()-1).finish();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 获取最顶端的activity
+     * @return 返回最顶层的activity
+     */
+    public BaseActivity getTopActivity(){
+        try{
+            if(activities.size()>0){
+                return activities.get(activities.size()-1);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 获取当前activity组中的activity数量
+     * @return 放回数量
+     */
+    public int getCount(){
+        if(activities!=null){
+            return activities.size();
+        }else{
+            return 0;
+        }
+    }
+
+    /***
+     * 通过activity的简单名字 删除指定的activity
+     * @param activitySimpleName  activity的简名
+     * @return 返回是否成功删除 当前activity文件
+     */
+    public boolean finishAppointActivity(String activitySimpleName){
+        try{
+            for (Activity activity : activities) {
+                if(activity.getClass().getSimpleName().equals(activitySimpleName)){
+                    if (!activity.isFinishing()) {
+                        activity.finish();
+                        return true;
+                    }
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * 获取所有的 缓存activity
+     * @return 返回activity
+     */
+    public List<BaseActivity> getActivities() {
+        return activities;
+    }
+}

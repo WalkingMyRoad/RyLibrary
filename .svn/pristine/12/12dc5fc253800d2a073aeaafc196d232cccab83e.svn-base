@@ -1,0 +1,68 @@
+package com.ist.rylibrary.base.listener;
+
+import com.ist.asr.RRtts;
+import com.ist.asr.RRttsListener;
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.controller.AiuiController;
+import com.ist.rylibrary.base.controller.ChassisController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.service.InfraredService;
+import com.ist.rylibrary.myfloatwindow.controller.FloatWindowController;
+import com.ist.rylibrary.myfloatwindow.service.FloatWindowService;
+
+import org.greenrobot.eventbus.EventBus;
+
+/**
+ * Created by minyuchun on 2017/3/25.
+ */
+
+public class BaseRRttsListener implements RRttsListener {
+    private RRtts mRRtts;
+    public BaseRRttsListener(RRtts rRtts){
+        this.mRRtts = rRtts;
+    }
+    @Override
+    public void onInitError(int i) {
+
+    }
+
+    @Override
+    public void onSpeakBegin() {
+
+    }
+
+    @Override
+    public void onBufferProgress(int i) {
+
+    }
+
+    @Override
+    public void onSpeakPaused() {
+        mRRtts.Resume();
+    }
+
+    @Override
+    public void onSpeakResumed() {
+
+    }
+
+    @Override
+    public void onSpeakProgress(int i) {
+        InfraredService.guideTime=0;
+
+    }
+    @Override
+    public void onCompleted(String s) {
+        //结束放音
+        RyApplication.getLog().d("是否是语音 结束 " +s);
+        FloatWindowController.getInstance().post(null,null);
+        if(s == null) {
+            AiuiController.getInstance().setJiangJieComplete(true);
+            AiuiController.getInstance().setYinDaoComplete(true);
+            SceneController.getInstance().dealActionList(true, SceneController.getInstance().getBaseActionBeanList());
+        }
+    }
+
+
+
+}

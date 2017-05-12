@@ -1,0 +1,20 @@
+package com.ist.rylibrary.base.listener;
+
+/**
+ * Created by minyuchun on 2017/4/22.
+ * 号码打人的回调接口
+ */
+
+public interface NumberListener {
+    /***
+     *  号码达人的结果回调
+     * @param text  用户说的话
+     * @param oper  类型
+     * @param code  电话号码
+     * @param posRank  修改的位置
+     * @param correctPart  修改后的内容
+     * @param wrongPart  修改前的内容
+     * @return 是否清除监听缓存
+     */
+    boolean result(String text, String oper, String code, String posRank, String correctPart, String wrongPart);
+}

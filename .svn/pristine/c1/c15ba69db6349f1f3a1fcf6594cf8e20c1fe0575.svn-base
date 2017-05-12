@@ -1,0 +1,291 @@
+package com.ist.rylibrary.base.controller;
+
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Handler;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.event.WebSocketMessageEvent;
+import com.ist.rylibrary.base.service.NetWorkServer;
+import com.ist.rylibrary.base.service.WebSocketService;
+import com.ist.rylibrary.base.util.TimeUtil;
+import com.ist.rylibrary.base.util.ToolUtil;
+
+import org.greenrobot.eventbus.EventBus;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.sql.Time;
+
+import de.tavendo.autobahn.WebSocketConnection;
+import de.tavendo.autobahn.WebSocketException;
+import de.tavendo.autobahn.WebSocketHandler;
+
+import static android.content.Context.CONNECTIVITY_SERVICE;
+import static com.ist.rylibrary.base.service.NetWorkServer.NETWORK_TYPE_INVALID;
+
+/**
+ * Created by minyuchun on 2017/3/27.
+ * webSocket控制类,用于websocket的连接一下消息发送等处理
+ */
+
+public class WebSocketController {
+    /**网络控制实例*/
+    private static WebSocketController mWebSocketController;
+    /**长连接*/
+    private WebSocketConnection mWebSocketConnection;
+    /**回调监听*/
+    private WebSocketListener mWebSocketListener;
+    /**连接计数*/
+    private int connectTime = 0;
+    /***/
+    private int MaxConnextTime = 30;
+
+    public static WebSocketController getInstance(){
+        if(mWebSocketController == null){
+            mWebSocketController = new WebSocketController();
+        }
+        return mWebSocketController;
+    }
+
+    public WebSocketController(){
+
+    }
+
+
+    /**
+     * 默认的发送websocket消息
+     * @param message 消息内容
+     */
+    public void post(String message){
+        post(false,WebSocketService.SOCKET_SEND,message);
+    }
+
+    /**
+     * 发送websocket消息
+     * @param isCustom 是否自定义
+     * @param message 消息内容
+     */
+    public void post(boolean isCustom,String message){
+        post(isCustom,WebSocketService.SOCKET_SEND,message);
+    }
+
+    /**
+     *  默认处理websocket消息
+     * @param messageType 消息类型 发送还是接收
+     * @param message 消息内容
+     */
+    public void post(int messageType,String message){
+        post(false,messageType,message);
+    }
+
+    /**
+     *  websocket 消息
+     * @param isCustom  是否自定义
+     * @param messageType  消息的发送类型 接受还是发送
+     * @param message 消息内容
+     */
+    public void post(boolean isCustom,int messageType,String message){
+        EventBus.getDefault().post(new WebSocketMessageEvent(isCustom,messageType,message));
+    }
+
+
+    /**
+     * websocket 回收方法
+     * @param isCustom  是否自定义
+     * @param messageType  消息类型 发送还是接收
+     * @param message 消息内容
+     */
+    public void recovery(boolean isCustom,int messageType,String message){
+        if(mWebSocketListener!=null){
+            mWebSocketListener.WebSocketMessage(isCustom,messageType,message);
+        }
+    }
+
+    /**
+     * 设置webSocket监听，用户自定义处理时的信息返回
+     * 当 发送消息 post(boolean isCustom ...)中isCustom为true时 设置的监听
+     * @param listener 自定义监听
+     */
+    public void setWebSocketListener(WebSocketListener listener){
+        this.mWebSocketListener = listener;
+    }
+    /**
+     * 自定义websocket处理时的监听接口
+     */
+    public interface WebSocketListener{
+        void WebSocketMessage(boolean isCustom,int messageType,String message);
+    }
+
+    /**
+     * websocket 建立连接
+     * 其中存在 连接的新建 以及 连接当前是否连通的判断
+     */
+    public void connect(){
+        try{
+            RyApplication.getLog().d("WebSocketController,链接操作");
+            if(mWebSocketConnection==null){
+                mWebSocketConnection = new WebSocketConnection();
+            }
+            if(!mWebSocketConnection.isConnected()){
+                String connectPath = getConnectionPath();
+                RyApplication.getLog().d("WebSocketController,链接路径 "+connectPath);
+                if(connectPath!=null && !connectPath.isEmpty()){
+                    mWebSocketConnection.connect(connectPath,new WebSocketHandler(){
+                        @Override
+                        public void onClose(int code, String reason) {
+                            super.onClose(code, reason);
+                            post(WebSocketService.SOCKET_ACCEPT,ConnectJson(false).toString());
+                            RyApplication.getLog().d("WebSocketController,断开链接了");
+                        }
+                        @Override
+                        public void onOpen() {
+                            super.onOpen();
+                            post(WebSocketService.SOCKET_ACCEPT,ConnectJson(true).toString());
+                            if(waitSendMessage!=null){
+                                post(waitSendMessage);
+                                waitSendMessage = null;
+                            }
+                            RyApplication.getLog().d("WebSocketController,链接上了");
+                        }
+                        @Override
+                        public void onTextMessage(String payload) {
+                            super.onTextMessage(payload);
+                            post(WebSocketService.SOCKET_ACCEPT,payload);
+                        }
+                        @Override
+                        public void onRawTextMessage(byte[] payload) {
+                            super.onRawTextMessage(payload);
+                        }
+                        @Override
+                        public void onBinaryMessage(byte[] payload) {
+                            super.onBinaryMessage(payload);
+                        }
+                    });
+                }
+            }
+        }catch (WebSocketException e){
+            e.printStackTrace();
+        }
+    }
+
+    private String waitSendMessage  = null;
+
+    /**
+     * websocket 发送消息
+     * @param message 小心内容
+     */
+    public void sendMessage(String message){
+        try{
+            if(mWebSocketConnection == null || !mWebSocketConnection.isConnected()){
+                RyApplication.getLog().d("WebSocketController,发送了消息所以链接了");
+                connect();
+                waitSendMessage = message;
+            }else{
+                RyApplication.getLog().d("websocket发送消息 "+message);
+                mWebSocketConnection.sendTextMessage(message);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 是否连接的处理json
+     * @param isConnect  是否连接
+     * @return  封装json
+     */
+    private JSONObject ConnectJson(boolean isConnect){
+        JSONObject jsonObject = new JSONObject();
+        try{
+            jsonObject.put("connect",isConnect);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return jsonObject;
+    }
+
+    /***
+     * 获取websocket连接地址
+     * @return  返回连接地址
+     */
+    public String getConnectionPath(){
+        String websocketHost = null,websocketId = null;
+        try{
+            websocketHost =SharedPreferencesController.getInstance().getWebsocketHost();
+            if(websocketHost!=null && websocketHost.trim().length()>0){
+                if(!websocketHost.startsWith("ws://")){
+                    websocketHost = "ws://"+websocketHost.trim();
+                }
+                if(!websocketHost.endsWith("/")){
+                    websocketHost = websocketHost + "/";
+                }
+                websocketId = SharedPreferencesController.getInstance().getWebsocketId();
+                if(websocketId!=null && websocketId.trim().length()>0){
+                    websocketId = "websocket/"+websocketId;
+                }else{
+                    websocketId = "websocket/RB_"+ ToolUtil.getInstance().getDeviceId();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        if(websocketHost == null || websocketId == null){
+            return null;
+        }else{
+            return websocketHost+websocketId;
+        }
+    }
+
+    /**
+     * 默认处理规则
+     * @param type  消息类型
+     * @param message  消息内容
+     */
+    public void defaultHandling(int type,String message){
+        try{
+            switch (type){
+                case WebSocketService.SOCKET_SEND:
+                    sendMessage(message);
+                    break;
+                case WebSocketService.SOCKET_ACCEPT:
+                    if(message.startsWith("{") && message.endsWith("}")){
+                        JSONObject jsonObject = new JSONObject(message);
+                        if(jsonObject.has("connect")){
+                            boolean isConnect = jsonObject.getBoolean("connect");
+                            if(!isConnect){
+                                TimeUtil.getInstance().isMultipleClick();
+//                                Log.i("WebSocketController","断开连接");
+//                                connectTime++;
+//                                if(connectTime > MaxConnextTime){
+//                                    connect();
+//                                    connectTime = 0;
+//                                }
+                                new Handler().postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        connect();
+                                    }
+                                },3000);
+                            }else{
+                                Log.i("WebSocketController","连接上了");
+                            }
+                        }
+                    }else{
+                        Log.i("WebSocketController","传过来的内容 " +message);
+                    }
+                    break;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+}

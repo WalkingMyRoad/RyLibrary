@@ -1,0 +1,61 @@
+package com.ist.rylibrary.base.entity;
+
+import java.util.List;
+
+/**
+ * Created by minyuchun on 2017/3/30.
+ * 讲解流程的单类
+ */
+
+public class JiangJieBean {
+    /**点位的名称*/
+    private String pointName;
+    /**点位指令*/
+    private String pointInstructions;
+    /**点位休眠时间*/
+    private int pointSleepTime;
+    /**去下一个点位前播放的语音*/
+    private String nextPointSpeak;
+    /**点位需要弹出的界面*/
+    private List<String> ponitPages;
+
+    public String getPointName() {
+        return pointName;
+    }
+
+    public void setPointName(String pointName) {
+        this.pointName = pointName;
+    }
+
+    public String getPointInstructions() {
+        return pointInstructions;
+    }
+
+    public void setPointInstructions(String pointInstructions) {
+        this.pointInstructions = pointInstructions;
+    }
+
+    public int getPointSleepTime() {
+        return pointSleepTime;
+    }
+
+    public void setPointSleepTime(int pointSleepTime) {
+        this.pointSleepTime = pointSleepTime;
+    }
+
+    public String getNextPointSpeak() {
+        return nextPointSpeak;
+    }
+
+    public void setNextPointSpeak(String nextPointSpeak) {
+        this.nextPointSpeak = nextPointSpeak;
+    }
+
+    public List<String> getPonitPages() {
+        return ponitPages;
+    }
+
+    public void setPonitPages(List<String> ponitPages) {
+        this.ponitPages = ponitPages;
+    }
+}

@@ -1,0 +1,28 @@
+package com.ist.rylibrary.base.controller;
+
+/**
+ * Created by minyuchun on 2017/4/9.
+ * 读取身份证控制类
+ */
+
+public class ReadIdCardController {
+
+    private static ReadIdCardController sReadIdCardController;
+
+    public static ReadIdCardController getInstance(){
+        if(sReadIdCardController == null){
+            sReadIdCardController = new ReadIdCardController();
+        }
+        return sReadIdCardController;
+    }
+    private ReadIdCardController(){
+    }
+
+    public void readIdCardStart(){
+
+    }
+
+    public void readIdCardStop(){
+
+    }
+}

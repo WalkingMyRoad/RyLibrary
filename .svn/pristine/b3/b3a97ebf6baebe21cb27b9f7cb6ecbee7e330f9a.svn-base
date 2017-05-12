@@ -1,0 +1,120 @@
+package com.ist.nativepackage;
+
+import android.util.Log;
+
+import java.util.Calendar;
+
+public class EyesCtrl {
+	private final String TAGEYE="EyeCtrl";
+	private final String DEV="/dev/ttyUSB0";
+
+	private boolean isWorking;
+	
+	private int doWhat=-1;			// 执行什么表情
+	private int doLong=0;  			// 执行多少s
+	private Calendar doCurDt;		// 日期参数
+	private long preTime = 0;		// 从执行动画开始，到doLong结束
+	private long curTime = 0;		// 过200ms就能刷新一次的实时时间
+	private boolean isDoing=false;	//是否处于执行表情: true 是，false 否
+	
+	// 执行眼睛
+	public void doEye(int cmd, int Sec){
+		//long t = getCurTimeInMillis();
+		doWhat=cmd;
+		doLong=Sec;
+		//long dt =doCurDt.getTime();
+		preTime = getPreTimeInMillis();
+		curTime = getCurTimeInMillis();
+		
+	}
+	// 更新CurTime
+	public long getCurTimeInMillis(){
+		
+		doCurDt = Calendar.getInstance();
+		long t = doCurDt.getTimeInMillis();
+		Log.d(TAGEYE,"CurTime更新了......t = "+t);
+		return t;
+	}
+	
+	// 更新PreTime
+	public long getPreTimeInMillis(){
+		doCurDt = Calendar.getInstance();
+		long t = doCurDt.getTimeInMillis();
+		Log.d(TAGEYE,"PreTime更新了......t = "+t);
+		return t;
+	}
+	
+	
+	
+	public void EyeWork(){
+		Eyes("1");
+		new Thread(){
+			public void run(){
+				if(isWorking){return;}
+				isWorking=true;
+//				preTime = getPreTimeInMillis(); 
+//				Log.d(TAGEYE,"preTime == "+preTime);      
+				
+				while(isWorking){
+					
+					//Log.d(TAGEYE, "[EyeWork] running.....");
+					try {  
+						
+						if(!isDoing && doWhat>=0){
+							Log.d(TAGEYE,"执行动画---------------------1");     
+							Eyes(doWhat+"");
+							doEye(doWhat, doLong);
+							isDoing=true;
+						}
+						if(isDoing){
+							Log.d(TAGEYE,"正在工作---------------------2");   
+//							doEye(doWhat, doLong);
+							Log.d(TAGEYE,"curTime = "+ curTime + "   preTime = " + (preTime+doLong*1000));
+							
+							//检查时间，超时了，则恢复默认的0
+							if(curTime > (preTime+doLong*1000))
+							{
+								Log.d(TAGEYE,"检查超时---------------------3");
+								//Log.d(TAGEYE,"curTime = "+ curTime + "   preTime = " + preTime);
+								Eyes("1");
+								isDoing=false;   
+								doWhat=-1;
+							}
+						}
+						if((false==isDoing) || doWhat <=0)
+						{
+							Log.d(TAGEYE,"一般状态下-------------------4");
+							Thread.sleep(20*1000);
+							Eyes("1");
+						}
+						Thread.sleep(200);
+						curTime = getCurTimeInMillis();
+						
+					} catch (Exception e) {  
+						// TODO: handle exception
+						e.printStackTrace();     
+					}
+				}
+			}
+		}.start();
+		Log.d(TAGEYE,"EyeWork Thread Exit.");
+	}
+	
+	
+	// 眼睛执行动作
+	public int Eyes(String cmd){
+		try{
+			int ret = Eyes.eyeExecCmd(DEV, cmd);
+			//doEye(int cmd, int Sec)
+//		doEye(Integer.parseInt(cmd),10);
+			isDoing = true;
+			//doWhat = Integer.parseInt(cmd);
+			doLong = 10;
+			return ret;
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+		return -1;
+	}
+	
+}

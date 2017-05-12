@@ -1,0 +1,144 @@
+package com.ist.rylibrary.base.util;
+
+import android.os.CountDownTimer;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
+
+/**
+ * Created by minyuchun on 2017/3/16.
+ */
+
+public class TimeUtil {
+    /**上一次红外检测的时间*/
+    private long lastInfraredTime;
+    /**上一次点击检测的时间*/
+    private long lastClickTime;
+    /**定时器*/
+    Timer mTimer = null;
+    /**定时器任务*/
+    TimerTask mTimerTask = null;
+    /**定时器监听*/
+    private TimerListener mTimerListener;
+    /**时间类实例*/
+    private static TimeUtil mTimeUtil;
+    /**获取时间类实例方法*/
+    public static TimeUtil getInstance(){
+        if(mTimeUtil == null){
+            mTimeUtil = new TimeUtil();
+        }
+        return mTimeUtil;
+    }
+
+    /**
+     * 判断是否少于给定的时间间隔
+     * @param lessTime  时间间隔 单位（微秒）
+     * @return  是否少于此时间间隔
+     */
+    public boolean isLessTimeInterval(int lessTime){
+        return isLessTimeInterval(lessTime,lastInfraredTime);
+    }
+
+    /**
+     * 是否少于时间间隔
+     * @param lessTime  时间间隔
+     * @param lastTime  上一次记录的时间
+     * @return 是否时间间隔少于上次记录的时间
+     */
+    private boolean isLessTimeInterval(int lessTime,long lastTime){
+        long currentTime = 0;
+        try{
+            Calendar calendar = Calendar.getInstance();
+            currentTime = calendar.getTimeInMillis();
+            if((currentTime - lastTime)<=lessTime){
+                return true;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            lastTime = currentTime;
+        }
+        return false;
+    }
+
+    /***
+     * 是否是多次点击
+     * @return  是否是多次点击
+     */
+    public boolean isMultipleClick(){
+        return isLessTimeInterval(800,lastClickTime);
+    }
+
+    /**
+     * 获取是上午还是下午
+     * @return  返回是上午还是下午
+     */
+    public static int getPmAndAm() {
+        GregorianCalendar ca = new GregorianCalendar();
+        return ca.get(GregorianCalendar.AM_PM);
+    }
+    /**
+     * 获取格式时间
+     * @param formatTime  时间的格式
+     * @return  返回格式时间
+     */
+    public String getFormatTime(String formatTime){
+        SimpleDateFormat format = new SimpleDateFormat(formatTime, Locale.getDefault());
+        return format.format(new Date());
+    }
+
+    /**
+     * 开启Timer类型的定时器
+     * @param listener 定时器监听
+     * @param delay 延后多少时间执行
+     * @param period  每次执行循环时间
+     */
+    public void startTimer(TimerListener listener,long delay, long period){
+        this.mTimerListener = listener;
+        mTimer = new Timer();
+        mTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                if(mTimerListener!=null){
+                    if(mTimerListener.complete()){
+                        stopTimer();
+                    }
+                }
+            }
+        };
+        mTimer.schedule(mTimerTask,delay,period);
+    }
+
+    /***
+     * 定时器停止
+     */
+    public void stopTimer(){
+        if(mTimer!=null){
+            mTimer.cancel();
+            mTimer = null;
+        }
+        if(mTimerTask!=null){
+            mTimerTask.cancel();
+            mTimerTask = null;
+        }
+        if(mTimerListener!=null){
+            if(mTimerListener.stop()){
+                mTimerListener = null;
+            }
+        }
+    }
+
+    /**
+     * 定时器监听
+     */
+    public interface TimerListener{
+        boolean complete();
+        boolean stop();
+    }
+
+}

@@ -1,0 +1,434 @@
+package com.ist.rylibrary.base.module;
+
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Color;
+import android.media.AudioManager;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.ist.rylibrary.R;
+import com.ist.rylibrary.base.controller.ActivityController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.service.InfraredService;
+import com.ist.rylibrary.base.ui.VerticalSeekBar;
+import com.ist.rylibrary.base.util.BaseLogUtil;
+import com.ist.rylibrary.base.util.TimeUtil;
+
+import java.lang.reflect.Field;
+
+/**
+ * Created by minyuchun on 2016/12/26.
+ */
+
+public abstract class BaseActivity extends AppCompatActivity implements View.OnClickListener,VerticalSeekBar.OnSeekBarChangeListener{
+    protected Context context;
+    /**使用LOG日志打印是出现的*/
+    protected String TAG;
+    /**主体用于添加到frame中展示的样式*/
+    private RelativeLayout.LayoutParams paramsCenter;
+    /**frame 父控件*/
+    private RelativeLayout parent;
+    /**外部添加 底部按钮栏*/
+    private LinearLayout footerButtonLayout;
+    /**主体界面*/
+    private ViewGroup frameBody;
+    /**标题栏,扩展使用*/
+    private Toolbar toolbar;
+    /**中间的自定义标题,扩展使用*/
+    private TextView titleTxt;
+    /**每个界面初始化的日志输出*/
+    public BaseLogUtil log;
+    private  GestureDetector gestureDetector;
+
+    private AudioManager audioManager;
+    private int maxVolume = 0;
+    private VerticalSeekBar seekBar;
+    private LinearLayout seekbar_liner;
+    private ImageView voiceImage;
+    private Handler handler=new Handler();
+
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        TAG=this.getClass().getSimpleName();
+        context=this;
+        try{
+            //设置屏幕全屏
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            if(getMainView()>0){
+                setContentView(getMainView());
+            }else{
+                setContentView(R.layout.activity_frame);
+            }
+
+//            BaseLogUtil.LogCatType = Log.ERROR;
+//            BaseLogUtil.isUseLogCat = false;
+            log = new BaseLogUtil(this.getClass());
+            log.d("onCreate");
+            paramsCenter = new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT,
+                    RelativeLayout.LayoutParams.MATCH_PARENT);
+            paramsCenter.addRule(RelativeLayout.BELOW, R.id.frame_top);
+            paramsCenter.addRule(RelativeLayout.ABOVE, R.id.frame_footer_main);
+            paramsCenter.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+            paramsCenter.leftMargin = 0;
+            paramsCenter.rightMargin = 0;
+            ActivityController.getInstance().addActivity(this);
+            initBaseView();
+            setMenuAlwaysShow();
+            initController();
+            initView();
+            initGes();
+            initVoice();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    private void initVoice(){
+        audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        seekBar = (VerticalSeekBar) findViewById(R.id.voice_seekbar);
+        if(maxVolume != 0){
+            seekBar.setMax(maxVolume);  //设置最大值
+        }
+        seekBar.setOnSeekBarChangeListener(this);
+        seekbar_liner = (LinearLayout) findViewById(R.id.seek_liner);
+        voiceImage= (ImageView) findViewById(R.id.voice_image);
+        voiceImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                voiceImage.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showVoice(1);
+                    }
+                });
+            }
+        });
+    }
+
+    //显示音量进度条 1是点击 2是语音
+    private void showVoice(int flag){
+        if(flag == 1){
+            if(voiceImage.getVisibility() == View.VISIBLE){
+                voiceImage.setVisibility(View.GONE);
+                seekbar_liner.setVisibility(View.VISIBLE);
+            }else {
+                voiceImage.setVisibility(View.VISIBLE);
+                seekbar_liner.setVisibility(View.GONE);
+            }
+        }else if(flag == 2){
+            if(voiceImage.getVisibility() == View.VISIBLE){
+                voiceImage.setVisibility(View.GONE);
+                seekbar_liner.setVisibility(View.VISIBLE);
+            }
+        }
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if(seekbar_liner.getVisibility() == View.VISIBLE){
+                    voiceImage.setVisibility(View.VISIBLE);
+                    seekbar_liner.setVisibility(View.GONE);
+                }
+            }
+        },20000);
+    }
+
+    //音量处理
+    private void dealVoice(String insType){
+        if(insType.equals("volume_plus")){  //增大音量
+            if(seekBar != null && maxVolume != 0 && seekBar.getProgress() != maxVolume){
+                dealSeek(seekBar.getProgress() + 1);
+            }
+        }else if(insType.equals("volume_minus")){   //减小音量
+            if(seekBar != null && seekBar.getProgress() != 0){
+                dealSeek(seekBar.getProgress() -1);
+            }
+        }else if(insType.equals("volume_max")){  //最大音量
+            if(seekBar != null && maxVolume != 0){
+                dealSeek(maxVolume);
+            }
+        }else if(insType.equals("volume_min")){  //最小音量
+            if(seekBar != null){
+                dealSeek(0);
+            }
+        }else if(insType.equals("mute")){     //静音
+            if(audioManager != null){
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+                voiceImage.setImageResource(R.drawable.volume_mute);
+            }
+        }else if(insType.equals("unmute")){   //静音恢复
+            if(audioManager != null){
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+                audioManager.setStreamVolume(AudioManager.RINGER_MODE_NORMAL,seekBar.getProgress(),0);
+                voiceImage.setImageResource(R.drawable.volume);
+            }
+        }
+        showVoice(2);
+    }
+
+    private void dealSeek(int progress){
+        if(seekBar != null){
+            seekBar.setProgress(progress);
+            if(audioManager != null){
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,progress,0);
+            }
+        }
+        checkVoice(progress);
+    }
+    //判断显示
+    private void checkVoice(int progress){
+        if(voiceImage != null){
+            if(progress == 0){
+                voiceImage.setImageResource(R.drawable.volume_mute);
+            }else {
+                voiceImage.setImageResource(R.drawable.volume);
+            }
+        }
+    }
+    private void initGes() {
+        gestureDetector = new GestureDetector(this, onGestureListener);
+    }
+
+    private GestureDetector.SimpleOnGestureListener onGestureListener = new GestureDetector.SimpleOnGestureListener() {
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            // go home
+            return true;
+        }
+
+    };
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        boolean result = super.dispatchTouchEvent(ev);
+        Log.i(TAG,"触摸屏幕啦！");
+        InfraredService.guideTime=0;
+        if (result) {
+            return result;
+        }
+        return gestureDetector.onTouchEvent(ev);
+    }
+    /***
+     * 初始化界面布局
+     * 公共库中初始化控件以及设置页面布局，私有子类不可用
+     */
+    private void initBaseView() {
+        try{
+            parent = (RelativeLayout) findViewById(R.id.frame_parent);
+//        frameTop=(LinearLayout)findViewById(R.id.frame_top);
+//        frameFooter=(LinearLayout)findViewById(R.id.frame_footer);
+            setButtonGroup();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 页面跳转
+     * 从当前的Activity 跳转到 你现在传递的 Activity当中
+     * @param clazz  想要打开的新Activity 文件
+     * @param bundle  需要传递的值是什么
+     */
+    protected void forward(Class<?> clazz, Bundle bundle) {
+        //跳转页面时候，引导的倒计清0！
+        InfraredService.guideTime=0;
+        Intent intent = new Intent(this, clazz);
+        if (bundle != null)
+            intent.putExtras(bundle);
+        startActivity(intent);
+    }
+
+    /***
+     * 若手机硬件存在menu按键 同样显示 overflow 图标
+     * 私有 不可用，
+     * 待修改状态
+     */
+    private void setMenuAlwaysShow() {
+        try {
+            ViewConfiguration config = ViewConfiguration.get(this);
+            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+            menuKeyField.setAccessible(true);
+            menuKeyField.setBoolean(config, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 设置按钮部分的显示方式
+     */
+    private void setButtonGroup(){
+        try{
+            log.d("setButtonGroup");
+            if(getButtonText()!=null && getButtonText().length>0) {
+                footerButtonLayout = (LinearLayout) findViewById(R.id.frame_footer_button);
+                footerButtonLayout.setVisibility(View.VISIBLE);
+                for (int i=0;i<getButtonText().length;i++){
+                    final int finalI = i;
+                    Button button=new Button(this);
+                    button.setBackgroundResource(R.drawable.style_button_default);
+                    button.setTextColor(Color.BLACK);
+                    button.setGravity(Gravity.CENTER);
+                    button.setText(getButtonText()[i]);
+                    button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            FooterOnClick(finalI);
+                        }
+                    });
+                    log.d(getApplication().getString(getButtonText()[i]));
+                    LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(200, LinearLayout.LayoutParams.WRAP_CONTENT);
+                    if(i>0){
+                        params.setMargins(100,10,10,10);
+                    }else{
+                        params.setMargins(10,10,10,10);
+                    }
+
+                    button.setLayoutParams(params);
+                    footerButtonLayout.addView(button);
+                }
+            }
+            //主体的样式
+            if(getBody()>0){
+                frameBody = (ViewGroup) LayoutInflater.from(this).inflate(getBody(), null);
+                parent.addView(frameBody, paramsCenter);
+            }else{
+                findViewById(R.id.nopage).setVisibility(View.VISIBLE);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 普通模式打开 Activity
+     * @param clazz   想打开的activity.class文件
+     * @param bundle  想传递的Bundle
+     */
+    public void openOrdinaryActivity(Class<?> clazz,Bundle bundle){
+        Intent intent=new Intent(this,clazz);
+        if(bundle!=null){
+            intent.putExtras(bundle);
+        }
+        startActivity(intent);
+    }
+
+    /***
+     * 初始化主界面 主界面的修改
+     * 当业务程序存在公共页面需要被其他页面引用时 可以新建一个Activity 继承
+     * 然后复制公共库页面 activity_frame 在业务程序中 进行修改(其中已有的内容不许删除与修改，修改时请注意)
+     * @return 返回 业务程序的公共主页面
+     */
+    public abstract int getMainView();
+    /***
+     * 初始化控制器实例，所有对象在此实例化
+     *
+     */
+    public abstract void initController();
+
+    /**
+     * 初始化界面设置，包括数据填充等
+     */
+    public abstract void initView();
+
+    /**
+     *  设置主体页面
+     */
+    public abstract int getBody();
+    /**
+     * 设置按钮文本
+     */
+    public abstract int[] getButtonText();
+    /***
+     * 点击底部按钮栏点击
+     * @param index
+     */
+    public abstract void FooterOnClick(int index);
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        log.d("onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        log.d("onResume");
+        SceneController.getInstance().changeScene(this.getClass().getName());
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        log.d("onRestart");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        log.d("onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        log.d("onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        log.d("onDestroy");
+        if(log!=null){
+            log=null;
+        }
+        ActivityController.getInstance().removeActivity(this);
+    }
+
+    @Override
+    public void onClick(View view) {
+        if(!TimeUtil.getInstance().isMultipleClick()){
+            onRyClick(view);
+        }
+    }
+    @Override
+    public void onProgressChanged(VerticalSeekBar vBar, int progress, boolean fromUser) {
+        if(audioManager != null){
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,progress,0);
+        }
+        checkVoice(progress);
+    }
+
+    @Override
+    public void onStartTrackingTouch(VerticalSeekBar vBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(VerticalSeekBar vBar) {
+
+    }
+    public abstract void onRyClick(View view);
+}

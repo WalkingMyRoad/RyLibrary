@@ -1,0 +1,185 @@
+package com.ist.rylibrary.base.controller;
+
+import android.content.Context;
+import android.os.AsyncTask;
+import android.util.Log;
+
+import com.cmcc.nativepackage.IDCard;
+import com.ist.nativepackage.RR;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+/**
+ * Created by minyuchun on 2017/4/9.
+ * 读取身份证控制类
+ */
+
+public class ReadIdCardController {
+    /**
+     * 全局控制类
+     */
+    private static ReadIdCardController sReadIdCardController;
+    /**
+     * 读取身份证的线程
+     */
+    private readIdCard mCardTask;
+    /**
+     * 读取计次
+     */
+    private int count;
+    /***
+     * 入去身份证监听
+     */
+    private ReadIdCardListener mReadIdCardListener;
+
+    private String TAG = "ReadIdCardController";
+
+    public static ReadIdCardController getInstance(){
+        if(sReadIdCardController == null){
+            sReadIdCardController = new ReadIdCardController();
+        }
+        return sReadIdCardController;
+    }
+    private ReadIdCardController(){
+    }
+
+    /**
+     * 开始读取身份证信息
+     * @param listener 监听
+     */
+    public void readIdCardStart(ReadIdCardListener listener){
+        mReadIdCardListener = listener;
+        if(mCardTask == null){
+            mCardTask = new readIdCard();
+        }
+        mCardTask.execute();
+        count = 0;
+        sendBroadLedPower(3, 1);
+    }
+
+    /**
+     * 结束读取身份证信息
+     */
+    public void readIdCardStop(){
+        if(mCardTask!=null){
+            if(!mCardTask.isCancelled()){
+                mCardTask.cancel(true);
+            }
+        }
+        sendBroadLedPower(3, 0);
+        count = 0;
+    }
+
+    private class readIdCard extends AsyncTask<Void,String,String> {
+        @Override
+        protected String doInBackground(Void... params) {
+            if(!isCancelled()){
+                return readCert();
+            }else{
+                return null;
+            }
+        }
+        @Override
+        protected void onProgressUpdate(String... values) {
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            try {
+                if(s!=null){
+                    Log.i(TAG,"    --------   "+s);
+                    JSONObject jsonObject = new JSONObject(s);
+                    if(jsonObject.has("result")){
+                        if(jsonObject.getString("result").equals("0")){
+                            if (mReadIdCardListener!=null){
+                                mReadIdCardListener.complete(jsonObject);
+                            }
+                            readIdCardStop();
+                        }
+                    }
+                }
+                Log.i(TAG,"是否异步线程被停止 "+isCancelled());
+                if(!isCancelled()){
+                    if (mReadIdCardListener!=null){
+                        mReadIdCardListener.error(null,count);
+                    }
+                    mCardTask = new readIdCard();
+                    mCardTask.execute();
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    // 读取身份证信息
+    public synchronized String readCert() {
+        try {
+            Thread.sleep(500);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        JSONObject json = new JSONObject();
+        count ++;
+        try {
+            Log.i(TAG, "IDCard.openIDCard start...   刷二代证打开");
+            int ret = IDCard.openIDCard(2, "", "");
+            Log.i(TAG, "IDCard.openIDCard end...  刷二代证关闭 "+ret);
+            json.put("result", ret);
+            // 无法连接身份证识别模块
+            if ("-9".equals(ret)) {
+                Log.i(TAG, "读取身份证结束");
+            } else if (ret == 0) {// 读取成功读取值然后返回
+                String[] idCardInfo = new String[9];
+                byte[] img = new byte[60000];
+                Log.i(TAG, "获取二代证中的信息");
+                final int result = IDCard.getIdCardInfo(idCardInfo, img);
+                json.put("result", result);
+                Log.i("识别结果：", result + "");
+                if (result == 0) {
+                    for (int i = 0; i < 9; i++) {
+                        try {
+                            json.put("name", idCardInfo[0]);
+                            json.put("sex", idCardInfo[1]);
+                            json.put("nation", idCardInfo[2]);
+                            json.put("birthdy", idCardInfo[3]);
+                            json.put("address", idCardInfo[4]);
+                            json.put("idcard_number", idCardInfo[5]);
+                            json.put("issue", idCardInfo[6]);
+                            json.put("end", idCardInfo[7]);
+                            json.put("img", idCardInfo[8]);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    return json.toString();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            IDCard.closeIDCard();
+        }
+        return json.toString();
+    }
+
+    /**
+     * @param led_id 1-4
+     * @param power 0 关闭 1开
+     */
+    public void sendBroadLedPower(int led_id, int power) {
+        RR.SetLedPower(led_id, power);
+    }
+
+    /***
+     * 　读取身份证的监听
+     */
+    public interface ReadIdCardListener{
+        void complete(JSONObject jsonObject);
+        void error(JSONObject jsonObject,int count);
+    }
+}

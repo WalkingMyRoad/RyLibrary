@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">RYLibrary</string>
+
+    <string name="no_page">本章节等待开发</string>
+    <string name="last_step">上一步</string>
+    <string name="next_step">下一步</string>
+    <string name="space_chinese_1">&#12288;</string>
+    <string name="space_chinese_2">&#12288;&#12288;</string>
+    <string name="space_english_1">&#160;</string>
+    <string name="space_english_2">&#160;&#160;</string>
+</resources>

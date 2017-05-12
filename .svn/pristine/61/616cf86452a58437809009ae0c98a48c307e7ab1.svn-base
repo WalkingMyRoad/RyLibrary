@@ -1,0 +1,60 @@
+package com.ist.rylibrary.base.entity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * Created by minyuchun on 2017/3/25.
+ * 讯飞解析的问答类
+ */
+
+public class FinalQAnswerBean{
+    /**用户的问*/
+    private String ask;
+    /**匹配的答 来自讯飞*/
+    private List<String> answer;
+    /**默认的回答*/
+    String[] answers = new String[]{"哎呀，我没听明白呢","贵宾，您说慢点，RR还在学习中呢","没有听清楚呢，您在大声的说一遍"};
+    public FinalQAnswerBean(){
+        answer = new ArrayList<>();
+    }
+    FinalQAnswerBean(int type){
+        answer = new ArrayList<>();
+    }
+
+    public String getAsk() {
+        return ask;
+    }
+
+    public void setAsk(String ask) {
+        this.ask = ask;
+    }
+
+    public List<String> getAnswer() {
+        return answer;
+    }
+
+    public void setAnswer(List<String> answer) {
+        this.answer = answer;
+    }
+
+    public void addAnswer(String answer){
+        this.answer.add(answer);
+    }
+
+    public String getoneAnswer(){
+        if(answer.size()>0){
+            return answer.get(new Random().nextInt(answer.size()));
+        }else{
+            return answers[new Random().nextInt(answers.length)];
+        }
+    }
+    @Override
+    public String toString() {
+        return "qAnswer5{" +
+                "ask='" + ask + '\'' +
+                ", answer=" + answer +
+                '}';
+    }
+}

@@ -1,0 +1,212 @@
+package com.ist.rylibrary.base.controller;
+
+import com.ist.asr.RRYuyiResult;
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.entity.AllInfoByRobotIdBean;
+import com.ist.rylibrary.base.entity.AllSceneResultBean;
+import com.ist.rylibrary.base.entity.DefaultResultBean;
+import com.ist.rylibrary.base.entity.MallDictsBean;
+import com.ist.rylibrary.base.function.HttpAllSceneAndBotFunction;
+import com.ist.rylibrary.base.function.HttpDefaultFunction;
+import com.ist.rylibrary.base.function.HttpDefaultResultFunc;
+import com.ist.rylibrary.base.function.HttpMallDictsFunction;
+import com.ist.rylibrary.base.inter.BaseHttpServiceInter;
+import com.ist.rylibrary.base.util.HttpUtil;
+import com.ist.rylibrary.base.util.ToolUtil;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import okhttp3.Call;
+
+/**
+ * Created by minyuchun on 2017/3/25.
+ */
+
+public class HttpController {
+    /**http控制实例*/
+    public static HttpController mHttpController;
+    /**http连接*/
+    public HttpUtil mHttpUtil;
+
+    public static final String InterfaceName_allSceneAndBot = "rrs/getAllSceneAndBot";
+    public static final String InterfaceName_MALLDICT = "rrs/getMallDict";
+    public static final String InterfaceName_addAIDiscernLog = "rrs/addAIDiscern";
+    public static final String InterfaceName_addVoiceLog = "rrs/addVoiceLog";
+
+    public static HttpController getInstance(){
+        if(mHttpController == null){
+            mHttpController = new HttpController();
+        }
+        return mHttpController;
+    }
+
+    protected HttpController(){
+        mHttpUtil = new HttpUtil();
+    }
+
+
+    /***
+     * 根据机器人编号获取机器人信息
+     */
+    public void getAllInfoByRobotId(Observer<List<AllInfoByRobotIdBean>> observer){
+        getAllInfoByRobotId(observer,ToolUtil.getInstance().getDeviceId());
+    }
+    /***
+     * 根据机器人编号获取机器人信息
+     */
+    public void getAllInfoByRobotId(Observer<List<AllInfoByRobotIdBean>> observer,String robotNo){
+        if(robotNo == null || robotNo.isEmpty()){
+            robotNo = ToolUtil.getInstance().getDeviceId();
+        }
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.getAllInfoByRobotId(robotNo)
+                    .map(new HttpDefaultResultFunc<List<AllInfoByRobotIdBean>>())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
+        }
+    }
+    /***
+     * 场景对话接口
+     */
+    public void getAllSceneAndBot(Observer<AllSceneResultBean> observer){
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.getAllSceneAndBot()
+                    .map(new HttpAllSceneAndBotFunction())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
+        }
+    }
+    /**
+     * 获取讲解流程的字典表
+     */
+    public void getMallDict(Observer<List<MallDictsBean>> observer){
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.getMallDicts(SharedPreferencesController.getInstance().getProgramCode())
+                    .map(new HttpMallDictsFunction<List<MallDictsBean>>())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
+        }
+    }
+    /***
+     * 写语音识别日志请求接口
+     * @param sceneId  场景id
+     * @param pageId  页面id
+     * @param question  用户的问
+     * @param answer 用户默认的回答
+     * @param voiceFile  语音文件
+     * @param matchQaId  匹配的问答id
+     * @param matchQuestion  匹配的问
+     * @param matchAnswer 匹配的答案
+     * @param actionType 执行的类型
+     * @param actionCode  执行的编码
+     */
+    public void addAIDiscernLog(String sceneId, String pageId, String question, String answer, String voiceFile,
+                                String matchQaId, String matchQuestion, String matchAnswer, String actionType,
+                                String actionCode) {
+        Map<String,String> map = new HashMap<>();
+        map.put("sceneId",sceneId);
+        map.put("pageId",pageId);
+        map.put("question",question);
+        map.put("answer",answer);
+        map.put("voiceFile",voiceFile);
+        map.put("matchQaId",matchQaId);
+        map.put("matchQuestion",matchQuestion);
+        map.put("matchAnswer",matchAnswer);
+        map.put("actionType",actionType);
+        map.put("actionCode",actionCode);
+        map.put("mallId",SharedPreferencesController.getInstance().getMailId());//默认的接口参数
+        map.put("robotNo",SharedPreferencesController.getInstance().getRobotNumber());//默认的接口参数
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.addAIDiscernLog(map)
+                    .map(new HttpDefaultFunction())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<DefaultResultBean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+
+                        }
+
+                        @Override
+                        public void onNext(DefaultResultBean value) {
+                            RyApplication.getLog().d("addAIDiscernLog接口返回 "+value.getRetcode()+","+value.getRetinfo());
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            RyApplication.getLog().d("addVoiceLog接口返回错误 "+e.toString());
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+        }
+    }
+
+    /***
+     * 添加语音文件到服务器
+     * @param readResult  读取结果
+     * @param iflySemantic
+     * @param wewinsSementic
+     * @param actionCode
+     * @param playContent
+     */
+    public void addVoiceLog(String readResult,String iflySemantic, String wewinsSementic,String actionCode,String playContent){
+        Map<String,String> map = new HashMap<>();
+        map.put("iflySemantic",iflySemantic);
+        map.put("wewinsSementic",wewinsSementic);
+        map.put("actionCode",actionCode);
+        map.put("playContent",playContent);
+        map.put("readResult",readResult);
+        map.put("mallId",SharedPreferencesController.getInstance().getMailId());
+        map.put("robotNo",SharedPreferencesController.getInstance().getRobotNumber());
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.addVoiceLog(map)
+                    .map(new HttpDefaultFunction())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<DefaultResultBean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+
+                        }
+                        @Override
+                        public void onNext(DefaultResultBean value) {
+                            RyApplication.getLog().d("addVoiceLog接口返回 "+value.getRetcode()+","+value.getRetinfo());
+                        }
+                        @Override
+                        public void onError(Throwable e) {
+                            RyApplication.getLog().d("addVoiceLog接口返回错误 "+e.toString());
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+        }
+    }
+}

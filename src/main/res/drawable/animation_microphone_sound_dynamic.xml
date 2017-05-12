@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--是否不是循环播放  oneshot = "true" 只播放一次  "false" 循环播放-->
+<animation-list
+    android:oneshot="false"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/microphone_sound_dynamic_1" android:duration="100"></item>
+    <item android:drawable="@drawable/microphone_sound_dynamic_2" android:duration="100"></item>
+    <item android:drawable="@drawable/microphone_sound_dynamic_3" android:duration="100"></item>
+    <item android:drawable="@drawable/microphone_sound_dynamic_4" android:duration="100"></item>
+    <item android:drawable="@drawable/microphone_sound_dynamic_5" android:duration="100"></item>
+    <item android:drawable="@drawable/microphone_sound_dynamic_6" android:duration="100"></item>
+    <item android:drawable="@drawable/microphone_sound_dynamic_7" android:duration="100"></item>
+</animation-list>

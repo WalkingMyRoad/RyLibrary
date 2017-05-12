@@ -1,0 +1,251 @@
+package com.ist.rylibrary.base.module;
+
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewConfiguration;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.ist.rylibrary.R;
+import com.ist.rylibrary.base.controller.ActivityController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.util.BaseLogUtil;
+import com.ist.rylibrary.base.util.TimeUtil;
+
+import java.lang.reflect.Field;
+
+/**
+ * Created by minyuchun on 2016/12/26.
+ */
+
+public abstract class BaseActivity extends AppCompatActivity implements View.OnClickListener{
+    /**使用LOG日志打印是出现的*/
+    protected String TAG;
+    /**主体用于添加到frame中展示的样式*/
+    private RelativeLayout.LayoutParams paramsCenter;
+    /**frame 父控件*/
+    private RelativeLayout parent;
+    /**外部添加 底部按钮栏*/
+    private LinearLayout footerButtonLayout;
+    /**主体界面*/
+    private ViewGroup frameBody;
+    /**标题栏*/
+    private Toolbar toolbar;
+    /**中间的自定义标题*/
+    private TextView titleTxt;
+    /**日志输出*/
+    public BaseLogUtil log;
+
+//    private static void forWord()
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        TAG=this.getClass().getSimpleName();
+        try{
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            if(getMainView()>0){
+                setContentView(getMainView());
+            }else{
+                setContentView(R.layout.activity_frame);
+            }
+//            BaseLogUtil.LogCatType = Log.ERROR;
+//            BaseLogUtil.isUseLogCat = false;
+            log = new BaseLogUtil(this.getClass());
+            log.d("onCreate");
+            paramsCenter = new RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT,
+                    RelativeLayout.LayoutParams.MATCH_PARENT);
+            paramsCenter.addRule(RelativeLayout.BELOW, R.id.frame_top);
+            paramsCenter.addRule(RelativeLayout.ABOVE, R.id.frame_footer_main);
+            paramsCenter.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+            paramsCenter.leftMargin = 0;
+            paramsCenter.rightMargin = 0;
+            ActivityController.getInstance().addActivity(this);
+            initBaseView();
+            setMenuAlwaysShow();
+            initController();
+            initView();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 初始化界面布局
+     */
+    private void initBaseView() {
+        try{
+            parent = (RelativeLayout) findViewById(R.id.frame_parent);
+//        frameTop=(LinearLayout)findViewById(R.id.frame_top);
+//        frameFooter=(LinearLayout)findViewById(R.id.frame_footer);
+            setButtonGroup();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 若手机硬件存在menu按键 同样显示 overflow 图标
+     */
+    private void setMenuAlwaysShow() {
+        try {
+            ViewConfiguration config = ViewConfiguration.get(this);
+            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+            menuKeyField.setAccessible(true);
+            menuKeyField.setBoolean(config, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 设置按钮部分的显示方式
+     */
+    private void setButtonGroup(){
+        try{
+            log.d("setButtonGroup");
+            if(getButtonText()!=null && getButtonText().length>0) {
+                footerButtonLayout = (LinearLayout) findViewById(R.id.frame_footer_button);
+                footerButtonLayout.setVisibility(View.VISIBLE);
+                for (int i=0;i<getButtonText().length;i++){
+                    final int finalI = i;
+                    Button button=new Button(this);
+                    button.setBackgroundResource(R.drawable.style_button_default);
+                    button.setTextColor(Color.BLACK);
+                    button.setGravity(Gravity.CENTER);
+                    button.setText(getButtonText()[i]);
+                    button.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            FooterOnClick(finalI);
+                        }
+                    });
+                    log.d(getApplication().getString(getButtonText()[i]));
+                    LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(200, LinearLayout.LayoutParams.WRAP_CONTENT);
+                    if(i>0){
+                        params.setMargins(100,10,10,10);
+                    }else{
+                        params.setMargins(10,10,10,10);
+                    }
+
+                    button.setLayoutParams(params);
+                    footerButtonLayout.addView(button);
+                }
+            }
+            //主体的样式
+            if(getBody()>0){
+                frameBody = (ViewGroup) LayoutInflater.from(this).inflate(getBody(), null);
+                parent.addView(frameBody, paramsCenter);
+            }else{
+                findViewById(R.id.nopage).setVisibility(View.VISIBLE);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 普通模式打开 Activity
+     * @param clazz   想打开的activity.class文件
+     * @param bundle  想传递的Bundle
+     */
+    public void openOrdinaryActivity(Class<?> clazz,Bundle bundle){
+        Intent intent=new Intent(this,clazz);
+        if(bundle!=null){
+            intent.putExtras(bundle);
+        }
+        startActivity(intent);
+    }
+
+    /***
+     * 初始化主界面 主界面的修改
+     * @return
+     */
+    public abstract int getMainView();
+
+    /***
+     * 初始化控制器实例，所有对象在此实例化
+     */
+    public abstract void initController();
+
+    /**
+     * 初始化界面设置，包括数据填充等
+     */
+    public abstract void initView();
+
+    /**
+     *  设置主体页面
+     */
+    public abstract int getBody();
+    /**
+     * 设置按钮文本
+     */
+    public abstract int[] getButtonText();
+    /***
+     * 点击底部按钮栏点击
+     * @param index
+     */
+    public abstract void FooterOnClick(int index);
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        log.d("onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        log.d("onResume");
+        SceneController.getInstance().changeScene(this.getClass().getName());
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        log.d("onRestart");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        log.d("onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        log.d("onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        log.d("onDestroy");
+        if(log!=null){
+            log=null;
+        }
+        ActivityController.getInstance().removeActivity(this);
+    }
+
+    @Override
+    public void onClick(View view) {
+        if(!TimeUtil.getInstance().isMultipleClick()){
+            onRyClick(view);
+        }
+    }
+
+    public abstract void onRyClick(View view);
+}

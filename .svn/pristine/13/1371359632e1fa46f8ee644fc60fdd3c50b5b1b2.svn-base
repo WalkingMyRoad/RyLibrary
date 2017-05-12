@@ -1,0 +1,28 @@
+package com.ist.rylibrary.base.entity;
+
+/**
+ * Created by minyuchun on 2017/3/30.
+ */
+
+public class YanjingBean extends BaseActionBean {
+
+    @Override
+    public void setAction(String action) {
+        if("smile".equals(action)){
+            action = "5";
+        }else if("acting_cute".equals(action)){
+            action = "7";
+        }else if("happy".equals(action)){
+            action = "6";
+        }else if("not_happy".equals(action)){
+            action = "2";
+        }else if("yun".equals(action)){
+            action = "4";
+        }else if("love".equals(action)){
+            action = "7";
+        }else if("cry".equals(action)){
+            action = "2";
+        }
+        super.setAction(action);
+    }
+}

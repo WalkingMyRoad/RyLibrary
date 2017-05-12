@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="blue">#0000ff</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="green">#00ff00</color>
+    <color name="red">#ff0000</color>
+    <color name="textColorPrimary">#33b5e5</color>
+    <color name="textColorSecondary">#aa66cc</color>
+    <color name="white">#ffffff</color>
+    <color name="yellow">#ffff00</color>
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="btn_txt_size_small">20sp</dimen>
+    <dimen name="txt_size_17">17sp</dimen>
+    <dimen name="txt_size_18">18sp</dimen>
+    <dimen name="txt_size_19">19sp</dimen>
+    <dimen name="txt_size_20">20sp</dimen>
+    <dimen name="txt_size_21">21sp</dimen>
+    <dimen name="txt_size_22">22sp</dimen>
+    <dimen name="txt_size_23">23sp</dimen>
+    <dimen name="txt_size_24">24sp</dimen>
+    <dimen name="txt_size_25">25sp</dimen>
+    <dimen name="txt_size_26">26sp</dimen>
+    <dimen name="txt_size_27">27sp</dimen>
+    <dimen name="txt_size_28">28sp</dimen>
+    <dimen name="txt_size_29">29sp</dimen>
+    <dimen name="txt_size_30">30sp</dimen>
+    <dimen name="txt_size_31">31sp</dimen>
+    <dimen name="txt_size_32">32sp</dimen>
+    <dimen name="txt_size_33">33sp</dimen>
+    <dimen name="txt_size_34">34sp</dimen>
+    <dimen name="txt_size_38">38sp</dimen>
+    <dimen name="txt_size_72">72sp</dimen>
+    <string name="app_name">RYLibrary</string>
+    <string name="last_step">上一步</string>
+    <string name="next_step">下一步</string>
+    <string name="no_page">本章节等待开发</string>
+    <string name="space_chinese_1">　</string>
+    <string name="space_chinese_2">　　</string>
+    <string name="space_english_1"> </string>
+    <string name="space_english_2">  </string>
+    <style name="Animation.Activity.Translucent.Style" parent="@android:style/Animation.Translucent">
+        <item name="android:windowEnterAnimation">@android:anim/slide_in_left</item>
+        <item name="android:windowExitAnimation">@android:anim/slide_out_right</item>
+    </style>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item><!--原色，标题栏底部背景颜色-->
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item> <!--色彩突显，如checkView以及EditText和其他控件的按钮样式颜色-->
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <!--设置menu菜单不遮挡actionbar-->
+        <item name="actionOverflowMenuStyle">@style/OverflowMenu</item>
+        <!--s设置Menu菜单的背景色-->
+        <item name="android:itemBackground">@android:color/white</item>
+    </style>
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:dividerHeight">1dp</item>
+    </style>
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+    <style name="AppTheme_full" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item><!--原色，标题栏底部背景颜色-->
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item> <!--色彩突显，如checkView以及EditText和其他控件的按钮样式颜色-->
+        <!--页面切换动画-->
+        <item name="android:windowAnimationStyle">@style/Animation.Activity.Translucent.Style</item>
+        <!--背景颜色及透明程度-->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- 半透明 -->
+        <item name="android:windowIsTranslucent">true</item>
+        <!--全屏-->
+        <item name="android:windowFullscreen">true</item>
+        <!--设置窗口内容不覆盖-->
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+    <style name="Dialog" parent="android:style/Theme.Dialog">
+        <!--背景颜色及透明程度-->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!--是否有标题 -->
+        <item name="android:windowNoTitle">true</item>
+        <!--是否浮现在activity之上-->
+        <item name="android:windowIsFloating">true</item>
+        <!--是否模糊-->
+        <item name="android:backgroundDimEnabled">true</item>
+        <!--来去除边框-->
+        <item name="android:windowFrame">@null</item>
+        <!--设置窗口内容不覆盖-->
+        <item name="android:windowContentOverlay">@null</item>
+        <!--设置动画，在这里使用让它继承系统的Animation.Dialog-->
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <!-- 半透明 -->
+        <item name="android:windowIsTranslucent">true</item>
+        <!--全屏-->
+        <item name="android:windowFullscreen">true</item>
+    </style>
+    <style name="MyCustomToolBarStyle" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:textColorPrimary">@color/textColorPrimary</item><!--用来定义标题栏文字颜色,setTitle时使用，自定义的toolbar中的textView不起效果-->
+        <item name="android:textColorSecondary">@color/textColorSecondary</item><!--用来定义弹出菜单icon的颜色(竖着排列的那三个点颜色，以及返回按钮等)-->
+        <item name="android:textColor">@color/colorAccent</item><!--用来定义弹出菜单OptionMenu文字的颜色，自定义的toolbar中的textView有效果-->
+    </style>
+    <style name="OverflowMenu" parent="Widget.AppCompat.PopupMenu.Overflow">
+        <!--兼容Api 21之前的版本 -->
+        <item name="overlapAnchor">false</item>
+    </style>
+</resources>

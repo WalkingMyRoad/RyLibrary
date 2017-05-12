@@ -1,0 +1,259 @@
+package com.ist.rylibrary.base.application;
+
+import android.app.Application;
+import android.content.Context;
+
+import com.ist.nativepackage.EyesCtrl;
+import com.ist.nativepackage.RR;
+import com.ist.rylibrary.base.controller.HttpController;
+import com.ist.rylibrary.base.controller.JiangJieController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.controller.SharedPreferencesController;
+import com.ist.rylibrary.base.entity.AllInfoByRobotIdBean;
+import com.ist.rylibrary.base.entity.AllSceneResultBean;
+import com.ist.rylibrary.base.entity.MallDictsBean;
+import com.ist.rylibrary.base.exception.CatchGlobalException;
+import com.ist.rylibrary.base.util.BaseLogUtil;
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.download.BaseImageDownloader;
+
+import java.util.List;
+
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+
+/**
+ * Created by minyuchun on 2017/3/16.
+ * 自定义的Application 业务程序可以集成 RyApplication 然后在AndroidManifest.xml中的application 标签中的 android:name=".base.xxx"添加
+ */
+
+public abstract class RyApplication extends Application{
+    /**全局上下文
+     * 可以通过 RyApplication.getContext() 获取
+     * */
+    private static Context context;
+    /**全局日志
+     * 可以通过 RyApplication.getLog() 获取
+     * */
+    private static BaseLogUtil log;
+    /**图片加载器
+     * */
+    protected static ImageLoader imageLoader;
+     /**是否是聊天**/
+    protected boolean isChat=true;
+    /**引导的内容**/
+    protected String guidText="";
+
+    public String getGuidText() {
+        return guidText;
+    }
+
+    public void setGuidText(String guidText) {
+        this.guidText = guidText;
+    }
+
+    public boolean isChat() {
+        return isChat;
+    }
+
+    public void setChat(boolean chat) {
+        isChat = chat;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        try{
+            context = getApplicationContext();
+            log = new BaseLogUtil(context.getClass());
+            SceneController.getInstance().setCompleteData(false);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            SceneController.getInstance().readSceneData();//先读取本地的缓存数据,然后偷偷的下载数据后替换
+            //截取错误日志
+//            CatchGlobalException.getInstance();
+            //初始化配置文件
+            initSharedPreference();
+            //初始化图片加载器
+            initLoader();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            //硬件串口初始化
+            RR.InitLock();
+            //眼睛屏同步
+            EyesCtrl.getInstance().EyeWork();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**
+     * 图片加载器初始化
+     */
+    private void initLoader(){
+        imageLoader = ImageLoader.getInstance();
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context)
+                .memoryCache(new WeakMemoryCache())
+                // 线程池内加载的数量
+                .threadPoolSize(3)
+                // 线程优先级
+                .threadPriority(Thread.NORM_PRIORITY - 2)
+                .discCacheSize(2 * 1024 * 1024)
+                .discCacheFileCount(1000)
+                .denyCacheImageMultipleSizesInMemory()
+                .discCacheFileNameGenerator(new Md5FileNameGenerator())
+                .tasksProcessingOrder(QueueProcessingType.LIFO)
+                .imageDownloader(new BaseImageDownloader(context, 3 * 1000, 3 * 1000))
+                .writeDebugLogs() // Remove // app
+                .build();
+        ImageLoader.getInstance().init(config);
+    }
+
+    public static ImageLoader getImageLoader() {
+        return imageLoader;
+    }
+
+    /**
+     * 读取配置文件数据并保存
+     */
+    private void initSharedPreference(){
+        //初始化本地数据实例
+        SharedPreferencesController.getInstance().initConfigSharedPreference(
+                new SharedPreferencesController.initSharedPreferenceListener() {
+                    @Override
+                    public boolean initData(int type, boolean isComplete) {
+                        if(isComplete){
+                            if(type == SharedPreferencesController.ShareByDemo){
+                                log.d("存在demo.xml配置或者config.xml日志完全直接使用缓存内容读取数据");
+                                getAllSceneAndBot();
+                                getMallDict();
+                            }else if(type == SharedPreferencesController.ShareByConfig){
+                                log.d("只存在config.xml配置先要通过机器人id读取配置信息");
+                                if(setProgramCode()!=null && !setProgramCode().isEmpty()){
+                                    SharedPreferencesController.getInstance().saveData("program_code",setProgramCode());
+                                }
+                                getAllInfoByRobotId();
+                            }
+                        }
+                        return false;
+                    }
+                }
+        );
+    }
+
+    public static Context getContext(){
+        return context;
+    }
+
+    public static BaseLogUtil getLog() {
+        return log;
+    }
+
+    public void getAllInfoByRobotId(){
+        log.d("根据机器人编号获取网店的相信信息");
+        HttpController.getInstance().getAllInfoByRobotId(new Observer<List<AllInfoByRobotIdBean>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+            @Override
+            public void onNext(List<AllInfoByRobotIdBean> value) {
+                log.d("接口获得机器人编号数据成功 "+value.toString());
+                if(value.size()>0){
+                    AllInfoByRobotIdBean bean = value.get(0);
+                    if(bean.getRobotInfo()!=null && bean.getMallInfo()!=null){
+                        SharedPreferencesController.getInstance().saveData("robot_number",bean.getRobotInfo().getRobotNo());
+                        SharedPreferencesController.getInstance().saveData("mall_id",bean.getMallInfo().getMallId());
+                        SharedPreferencesController.getInstance().saveData("mall_number",bean.getMallInfo().getMallNo());
+                        getAllSceneAndBot();
+                        getMallDict();
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                log.d("接口获得机器人编号数据失败 "+e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        },setRobotNo());
+    }
+
+
+    public void getAllSceneAndBot(){
+        log.d("获取所有场景数据");
+        HttpController.getInstance().getAllSceneAndBot(new Observer<AllSceneResultBean>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+//                SceneController.getInstance().setCompleteData(false);
+            }
+            @Override
+            public void onNext(AllSceneResultBean value) {
+                log.d("接口获得场景列表数据成功 ");
+                SceneController.getInstance().saveSceneData(value);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                log.d("接口获取场景列表数据失败 "+e.getClass().getSimpleName());
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+    }
+
+    public void getMallDict(){
+        log.d("获取字典表数据");
+        HttpController.getInstance().getMallDict(new Observer<List<MallDictsBean>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(List<MallDictsBean> value) {
+                log.d("接口获取字典表数据成功 ");
+                if(value.size()>0){
+                    SharedPreferencesController.getInstance().saveData("jiangjie",value.get(0).getValue());
+                    JiangJieController.getInstance().initJiangJieData(value.get(0).getValue());
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                log.d("接口获取字典表数据失败 "+e.getClass().getSimpleName());
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+    }
+
+    /**
+     * 程序编码
+     * @return 返回程序编码
+     */
+    public abstract String setProgramCode();
+
+    /***
+     * 机器人编号
+     * @return 机器人编号
+     */
+    public abstract String setRobotNo();
+}

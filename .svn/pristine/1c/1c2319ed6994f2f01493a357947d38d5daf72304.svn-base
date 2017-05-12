@@ -1,0 +1,143 @@
+package com.ist.rylibrary.base.module;
+
+import android.graphics.Bitmap;
+import android.os.Bundle;
+import android.os.PersistableBundle;
+import android.support.annotation.Nullable;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.ImageView;
+
+import com.ist.nativepackage.EyesCtrl;
+import com.ist.nativepackage.RR;
+import com.ist.rylibrary.R;
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.controller.ActivityController;
+import com.ist.rylibrary.base.controller.LocalDataController;
+import com.ist.rylibrary.base.util.ToolUtil;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by minyuchun on 2017/3/21.
+ */
+
+public class BaseDormancyActivity extends BaseActivity{
+    /**休眠页面展示图片*/
+    protected ImageView imgDormancy;
+    /**存储图片地址*/
+    private String DORMANCY_IMAGE = File.separator+"dormancy";
+
+    protected DisplayImageOptions options;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        options = getOptions();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ActivityController.getInstance().setInBusiness(false);
+        try{
+            RR.InitLock();
+            EyesCtrl eyesCtrl =new EyesCtrl();
+            eyesCtrl.EyeWork();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public DisplayImageOptions getOptions(){
+        options = new DisplayImageOptions.Builder()
+                .cacheInMemory(true)
+                .considerExifParams(true).cacheOnDisk(true)
+                .bitmapConfig(Bitmap.Config.RGB_565).build();
+        return options;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+//        RyApplication.getImageLoader().destroy();
+    }
+
+    public void setImgDormancy(String filepath){
+        try{
+            String standPath = "file://"+filepath;
+            RyApplication.getImageLoader().displayImage(standPath,imgDormancy,options);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private List<String> getImageFile(String filePath){
+        List<String> imgList = new ArrayList<>();
+        try{
+            List<String> fileList = ToolUtil.getInstance().getFiles(filePath);
+            for (String name:fileList){
+                if(name.endsWith(".png") || name.endsWith(".jpg")){
+                    imgList.add(name);
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return imgList;
+    }
+
+
+    @Override
+    public int getMainView() {
+        return 0;
+    }
+
+    @Override
+    public void initController() {
+        imgDormancy = (ImageView) findViewById(R.id.dormancy_base);
+        imgDormancy.setOnClickListener(this);
+    }
+
+    @Override
+    public void initView() {
+        try{
+            File file = new File(LocalDataController.getInstance().getBASE_PATH_LOCAL_DATA()+DORMANCY_IMAGE);
+            if(!file.exists()){
+                file.mkdirs();
+            }
+            List<String> fileImg = getImageFile(file.getPath());
+            if (fileImg!=null && fileImg.size()>0){
+                setImgDormancy(file.getPath()
+                        + File.separator
+                        + getImageFile(file.getPath()).get(0));
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public int getBody() {
+        return R.layout.activity_dormancy_base;
+    }
+
+    @Override
+    public int[] getButtonText() {
+        return new int[0];
+    }
+
+    @Override
+    public void FooterOnClick(int index) {
+
+    }
+
+    @Override
+    public void onRyClick(View view) {
+
+    }
+}

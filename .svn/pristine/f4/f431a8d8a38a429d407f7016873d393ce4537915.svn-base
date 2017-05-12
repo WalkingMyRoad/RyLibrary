@@ -1,0 +1,520 @@
+package com.ist.rylibrary.base.util;
+
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.telephony.TelephonyManager;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.util.Xml;
+
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.controller.SharedPreferencesController;
+
+import org.greenrobot.eventbus.EventBus;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.xmlpull.v1.XmlSerializer;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static android.content.Context.TELEPHONY_SERVICE;
+
+/**
+ * Created by minyuchun on 2017/3/16.
+ * 工具类
+ * getAppName() 获取app名称
+ * getAppPackageName() 获取程序的包名
+ * getAppVersionName() 获取程序版本名称
+ * getAppVersionCode() 获取程序的版本编号
+ */
+
+public class ToolUtil {
+    /**工具类实例*/
+    private static ToolUtil sToolUtil;
+
+    public static ToolUtil getInstance(){
+        if(sToolUtil == null){
+            sToolUtil = new ToolUtil();
+        }
+        return sToolUtil;
+    }
+
+    public ToolUtil(){
+    }
+
+    /**
+     * 获取当前程序app的名称
+     * @return
+     */
+    public String getAppName(){
+        PackageManager pm = RyApplication.getContext().getPackageManager();
+        return RyApplication.getContext().getApplicationInfo().loadLabel(pm).toString();
+    }
+
+    /**
+     * 获取包名
+     * @return
+     */
+    public String getAppPackageName(){
+        String packageName = null;
+        try{
+            packageName = RyApplication.getContext().getPackageName();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return packageName;
+    }
+
+    /**
+     * 获取当前 app 的版本名称
+     * @return
+     * @throws PackageManager.NameNotFoundException
+     */
+    public String getAppVersionName() throws PackageManager.NameNotFoundException {
+        return RyApplication.getContext().getPackageManager().getPackageInfo(getAppPackageName(), 0).versionName;
+    }
+    /**
+     * 获取当前aoo的版本号
+     * @return
+     * @throws PackageManager.NameNotFoundException
+     */
+    public int getAppVersionCode() throws PackageManager.NameNotFoundException {
+        return RyApplication.getContext().getPackageManager().getPackageInfo(getAppPackageName(), 0).versionCode;
+    }
+
+    /***
+     * 获取当前运行程序中最上层的 如果是当前程序 就返回activity的名称
+     * 不是当前程序则 返回空字符串
+     * @param context
+     * @return
+     */
+    public String getTopActivity(Context context) {
+        try{
+            ActivityManager manager = (ActivityManager)context.getSystemService(context.ACTIVITY_SERVICE) ;
+            List<ActivityManager.RunningTaskInfo> runningTaskInfos = manager.getRunningTasks(1) ;
+            if(runningTaskInfos != null){
+                ComponentName cn = runningTaskInfos.get(0).topActivity;
+                if(cn.getPackageName().equals(context.getPackageName())){
+                    return cn.getClassName();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    /***
+     * 存储本地的xml文件
+     * @param map  存储数据
+     * @param filePath  文件存储全路径
+     */
+    public void saveXML(Map<Object,Object> map,String filePath) {
+        try {
+            if (filePath.endsWith(".xml")) {
+                File file = new File(filePath);
+                FileOutputStream fileOutputStream = new FileOutputStream(file);
+                XmlSerializer serializer = Xml.newSerializer();
+                serializer.setOutput(fileOutputStream,"utf-8");
+                serializer.startDocument("utf-8", true);
+                serializer.startTag(null, "persons");//设置标签
+                for (Map.Entry<Object, Object> entry : map.entrySet()) {
+                    Log.i("ToolUtil", "map的key = " + entry.getKey() + ",value = " + entry.getValue());
+                }
+                serializer.endTag(null, "persons");//设置尾部标签
+                serializer.endDocument();
+                fileOutputStream.close();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 获取设备分辨路
+     * @param activity  传入当前的acticity
+     * @return 返回分辨率匹配
+     */
+    public String getDrawableDpi(Activity activity){
+        DisplayMetrics dm = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        return getDpi(dm.densityDpi);
+    }
+    private String getDpi(int dpi){
+        String drawableDpi = null;
+        switch (dpi){
+            case 120:
+                drawableDpi = "ldpi";
+                break;
+            case 160:
+                drawableDpi = "mdpi";
+                break;
+            case 240:
+                drawableDpi = "hdpi";
+                break;
+            case 320:
+                drawableDpi = "xhdpi";
+                break;
+            default:
+                break;
+        }
+        return drawableDpi;
+    }
+
+    /***
+     * 获取文件下子文件的文件名
+     * @param pathStr 文件夹路径
+     * @return 返回文件集合
+     */
+    public List<String> getFiles(String pathStr){
+        List<String> mList = new ArrayList<String>();
+        File file=new File(pathStr);
+        if(file.exists()){
+            File[] files=file.listFiles();
+            for(int i=0;i<files.length;i++){
+                String fileName=files[i].getName();
+                mList.add(fileName);
+            }
+        }
+        return mList;
+    }
+
+
+    /**
+     * 将字符串写入到文本文件中
+     * @param strContent  文件内容
+     * @param filePath  文件路径
+     * @param fileName  文件姓名
+     */
+    public void writeTxtToFile(String strContent, String filePath, String fileName) {
+        // 生成文件夹之后，再生成文件，不然会出错
+        FileWriter fw = null;
+        try{
+            File file = new File(filePath);
+            if(!file.exists()){
+                file.mkdirs();
+            }
+            File fileTxt = new File(filePath+fileName);
+            if (!fileTxt.exists()) {
+                fileTxt.createNewFile();
+            }
+            fw =new FileWriter(fileTxt,false);
+            fw.write(strContent);
+        }catch (IOException e){
+            e.printStackTrace();
+        }finally {
+            if(fw!=null){
+                try {
+                    fw.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * 读取文件的内容
+     * @param fileName 文件名
+     * @return
+     * @throws IOException
+     */
+    public String readFileSdcardFile(String fileName) throws IOException {
+        String resultStr = "";
+        FileInputStream fis = null;
+        try {
+            File file = new File(fileName);
+            if(file.exists()){
+                Long fileLength = file.length();
+                byte[] fileContent = new byte[fileLength.intValue()];
+                fis = new FileInputStream(file);
+                fis.read(fileContent);
+                resultStr = new String(fileContent);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if(fis != null) {
+                    fis.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return resultStr;
+    }
+
+    /**
+     * 在json 中读取字符串
+     * @param jsonObject json
+     * @param key  读取的字符串文件
+     * @return  返回读取数据或者 空字符串
+     */
+    public String readStringJson(JSONObject jsonObject, String key){
+        try{
+            if(jsonObject.has(key)){
+                return jsonObject.getString(key);
+            }
+        }catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public int readIntJson(JSONObject jsonObject, String key){
+        try{
+            if(jsonObject.has(key)){
+                return jsonObject.getInt(key);
+            }
+        }catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public String getDeviceId(){
+        String deviceId = "";
+//        TelephonyManager TelephonyMgr = (TelephonyManager) RyApplication.getContext().getSystemService(TELEPHONY_SERVICE);
+//        return TelephonyMgr.getDeviceId();
+        try{
+            deviceId = android.os.SystemProperties.get("persist.service.ist.MachineNo");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return deviceId;
+    }
+    /**
+     * 初始化(绑定)EventBus
+     * @param subscriber 上下文
+     */
+    public void loadEventBus(Object subscriber){
+        try{
+            if(!EventBus.getDefault().isRegistered(subscriber)){
+                EventBus.getDefault().register(subscriber);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**
+     * 解除绑定EventBus
+     * @param subscriber 上下文
+     */
+    public void relieveEventBus(Object subscriber){
+        try{
+            EventBus.getDefault().unregister(subscriber);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**
+     * 获取当前程序上层activity 名称
+     * @return
+     */
+    public String getThisPackActivityName(Context context) {
+        try{
+            ActivityManager manager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE) ;
+            List<ActivityManager.RunningTaskInfo> runningTaskInfos = manager.getRunningTasks(1) ;
+            if(runningTaskInfos != null){
+                ComponentName cn = runningTaskInfos.get(0).topActivity;
+                if(cn.getPackageName().equals(context.getPackageName())){
+                    return cn.getClassName();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    /**
+     * 打开明星脸-不隐藏说话条
+     */
+    public void startAPKStarFace(){
+        startAPKStarFace(false);
+    }
+
+    /**
+     * 打开明星脸
+     * @param isCloseFloating 是否隐藏说话条
+     */
+    public void startAPKStarFace(boolean isCloseFloating) {
+        try{
+            ComponentName toActivity = new ComponentName("com.ist.starfaceframe", "com.ist.starfaceframe.MainActivity");
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.setComponent(toActivity);
+            intent.putExtra("appName", getAppName());
+            intent.putExtra("appVersionName", getAppVersionName());
+            intent.putExtra("appVersionCode", getAppVersionCode());
+            intent.putExtra("robotNo", SharedPreferencesController.getInstance().getRobotNumber());
+            intent.putExtra("isCloseFloating",isCloseFloating);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            RyApplication.getContext().startActivity(intent);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /***
+     * 明星脸程序停止
+     */
+    public void stopAPKStarFace(){
+        try{
+            Intent intent=new Intent();
+            intent.setAction("star_accept");
+            intent.putExtra("information","star_close");
+            RyApplication.getContext().sendBroadcast(intent);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+
+    private String dealCnArr(String chineseNumber){
+        String newNumber = "";
+        try{
+            StringBuffer stringCn = new StringBuffer();
+            RyApplication.getLog().d("修改前的数字 "+chineseNumber);
+            for(int i = 0; i < chineseNumber.length(); i++){
+                char c = chineseNumber.charAt(i);
+                String matchchar = null;
+                for (int j = 0;j < cnArr.length;j++){
+                    if(c == cnArr[j]){
+                        matchchar = String.valueOf(j);
+                    }
+                }
+                if(matchchar!=null){
+                    stringCn.append(matchchar);
+                }else{
+                    stringCn.append(c);
+                }
+            }
+            newNumber = stringCn.toString();
+            if(newNumber.startsWith("0") && newNumber.length()>1){
+                newNumber = newNumber.substring(1,newNumber.length());
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return newNumber;
+    }
+    private String dealChArr(String chineseNumber){
+        String newNumber = "";
+        try{
+            StringBuffer stringCn = new StringBuffer();
+            RyApplication.getLog().d("修改前的数字 "+chineseNumber);
+            for(int i = 0; i < chineseNumber.length(); i++){
+                char c = chineseNumber.charAt(i);
+                String matchchar = null;
+                for (int j = 0;j < chArr.length;j++){
+                    if(c == chArr[j]){
+                        if(j == (chArr.length-1)){
+                            matchchar = "十";
+                        }else{
+                            matchchar = String.valueOf(j);
+                        }
+                    }
+                }
+                if(matchchar!=null){
+                    stringCn.append(matchchar);
+                }else{
+                    stringCn.append(c);
+                }
+            }
+            newNumber = stringCn.toString();
+            if(newNumber.startsWith("0") && newNumber.length()>1){
+                newNumber = newNumber.substring(1,newNumber.length());
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return newNumber;
+    }
+    private String dealCoArr(String chineseNumber){
+        String newNumber = "";
+        StringBuffer str = new StringBuffer();
+        List<Integer> list = new ArrayList<>();
+        try{
+            int number = 0;
+            for(int i = 0; i < chineseNumber.length(); i++){
+                char c = chineseNumber.charAt(i);
+                int matchchar = -1;
+                for (int j = 0;j < coArr.length;j++){
+                    if(c == coArr[j]){
+                        matchchar = j;
+                    }
+                }
+                if(matchchar!=-1){
+                    int n = Integer.valueOf(str.toString());
+                    switch (matchchar){
+                        case 0:
+                            n = n * 10;
+                            break;
+                        case 1:
+                            n = n * 100;
+                            break;
+                        case 2:
+                            n = n * 1000;
+                            break;
+                        case 3:
+                            n = n * 10000;
+                            break;
+                        case 4:
+                            n = n * 100000000;
+                            break;
+                        default:
+                            break;
+                    }
+                    list.add(n);
+                    str = new StringBuffer();
+                }else{
+                    str.append(c);
+                }
+            }
+            if (str.length()>0){
+                list.add(Integer.valueOf(str.toString()));
+            }
+            for (int i:list) {
+                number +=i;
+            }
+            newNumber = String.valueOf(number);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return newNumber;
+    }
+
+    char[] cnArr = new char[]{'零','一','二','三','四','五','六','七','八','九'};
+    char[] chArr = new char[]{'零','壹','贰','叁','肆','伍','陆','柒','捌','玖','拾'};
+    char[] coArr = new char[]{'十','百','千','万','亿'};
+
+    public String chineseNumber2Int(String chineseNumber){
+        String cnNumber = dealCnArr(chineseNumber);
+        RyApplication.getLog().d("第一次修改后的数字 "+cnNumber);
+        String chNumber = dealChArr(cnNumber);
+        RyApplication.getLog().d("第二次修改后的数字 "+chNumber);
+        String coNumber = dealCoArr(chNumber);
+        RyApplication.getLog().d("第三次修改后的数字 "+coNumber);
+        return coNumber;
+    }
+}

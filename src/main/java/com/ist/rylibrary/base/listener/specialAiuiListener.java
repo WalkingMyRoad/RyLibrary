@@ -1,0 +1,27 @@
+package com.ist.rylibrary.base.listener;
+
+import com.ist.rylibrary.base.entity.FinalQASemanticSlotsBean;
+
+/**
+ * Created by minyuchun on 2017/4/22.
+ * 号码打人的回调接口
+ */
+
+public interface specialAiuiListener {
+    /***
+     * 号码达人的结果回调
+     * @param text  用户说的话
+     * @param code  电话号码，或者 指令命令
+     * @param slotsBean 返回的 解析类
+     * @return 是否清除监听缓存
+     */
+    boolean numberResult(String text, String code, FinalQASemanticSlotsBean slotsBean);
+    /***
+     * 号码达人的结果回调
+     * @param text  用户说的话
+     * @param item  指令命令
+     * @param slotsBean 返回的 解析类
+     * @return 是否清除监听缓存
+     */
+    boolean cmdResult(String text, String item, FinalQASemanticSlotsBean slotsBean);
+}

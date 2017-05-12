@@ -1,0 +1,257 @@
+package com.ist.rylibrary.base.controller;
+
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.entity.JiangJieBean;
+import com.ist.rylibrary.base.listener.BaseRRttsListener;
+import com.ist.rylibrary.base.service.AiuiService;
+import com.wewins.robot.Dipan;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by minyuchun on 2017/3/30.
+ * 讲解流程控制类
+ */
+
+public class JiangJieController {
+    /**讲解控制实例*/
+    private static JiangJieController sJiangJieController;
+    /**讲解流程的列表*/
+    private List<JiangJieBean> mJiangJieBeenList;
+    /**当前点位的坐标*/
+    private int pointIndex;
+    /**是否已到达点位说话，用于区分到达后说话与去下一个点说话*/
+    private boolean isArrivalPoint;
+    /**是否是在讲解过程*/
+    private boolean isInJiangJieProcess;
+
+    /***
+     * 获取实例
+     * @return 返回实例
+     */
+    public static JiangJieController getInstance(){
+        if(sJiangJieController == null){
+            sJiangJieController = new JiangJieController();
+        }
+        return sJiangJieController;
+    }
+
+    public JiangJieController(){
+    }
+
+    /**
+     * 模拟数据数组
+     * @return 返回数据数组
+     */
+    private List<JiangJieBean> initList(){
+        List<JiangJieBean> list = new ArrayList<>();
+        for (int i=0;i<5;i++){
+            JiangJieBean bean = new JiangJieBean();
+            if(i%2 == 0){
+                if(i==0){
+                    bean.setNextPointSpeak("接下来，请大家跟我一起参观硬件部");
+                }else if(i == 2){
+                    bean.setNextPointSpeak("接下来，请大家再跟我一起参观硬件部");
+                }
+                bean.setPointName("软件部");
+                bean.setPointInstructions("weishan_ruanjianbu");
+            }else{
+                if(i == 1){
+                    bean.setNextPointSpeak("接下来，请大家跟我一起参观软件部");
+                }else if(i == 3){
+                    bean.setNextPointSpeak("我的讲解到此结束，我要回去咯");
+                }
+                bean.setPointName("硬件部");
+                bean.setPointInstructions("weishan_yingjianbu");
+            }
+            bean.setPointSleepTime(3);
+            list.add(bean);
+        }
+        return list;
+    }
+
+    /**
+     * 设置讲解数组
+     * @param jiangJieBeenList 讲解数组
+     */
+    public void setJiangJieBeenList(List<JiangJieBean> jiangJieBeenList) {
+        mJiangJieBeenList = jiangJieBeenList;
+    }
+
+    /***
+     * 讲解流程开始
+     */
+    public void JiangJieStart(){
+        if(mJiangJieBeenList!=null && mJiangJieBeenList.size()>0){
+            //移动时的监听
+            isInJiangJieProcess = true;
+            ChassisController.getInstance().setJiangJieListener(new ChassisController.JiangJieListener() {
+                @Override
+                public void JiangJieComplete(int resultType,String where) {
+                    if(resultType == Dipan.REACHED || resultType == Dipan.UNREACHED){
+                        RyApplication.getLog().d("到达点位 ="+where +",配置点位 = "+mJiangJieBeenList.get(pointIndex).getPointName());
+                        if(!where.equals(mJiangJieBeenList.get(pointIndex).getPointName())){
+                            ChassisAction();
+                        }else{
+                            isArrivalPoint = true;
+                            SceneController.getInstance().rrPeople(mJiangJieBeenList.get(pointIndex).getPointInstructions(),null);
+                            ImageShow();
+                        }
+                    }
+                }
+                @Override
+                public void JiangJieError(int errorType) {
+                    if (errorType!=Dipan.E_ONCONNET){
+                        JiangJieEnd();
+                    }
+                }
+            });
+            //语音播放时否完成
+            AiuiController.getInstance().setJiangJieListener(new AiuiController.JiangJieListener() {
+                @Override
+                public void JiangJieComplete(boolean isComplete) {
+                    if(isComplete){
+                        if(isArrivalPoint){
+                            ImageClose();
+                            AiuiAction();
+                        }else{
+                            ChassisAction();
+                        }
+                    }else{
+                        JiangJieEnd();
+                    }
+                }
+            });
+            pointIndex = 0;
+            AiuiController.getInstance().post(AiuiService.AIUI_TYPE_CLOSE);
+            AiuiAction();
+            AiuiController.getInstance().setYinDaoListener(null);
+            ChassisController.getInstance().setYinDaoListener(null);
+        }
+    }
+
+    /**
+     * 讲解流程手动结束
+     */
+    public void JiangJieactiveEnd(){
+        isInJiangJieProcess = false;
+        AiuiController.getInstance().post(AiuiService.AIUI_TYPE_OPEN);
+        ChassisController.getInstance().setJiangJieListener(null);
+        AiuiController.getInstance().setJiangJieListener(null);
+        ChassisController.getInstance().getHuman().stop();
+    }
+
+    /***
+     * 是否在讲解流程
+     * @return 返回是否在讲解流程
+     */
+    public boolean isInJiangJieProcess() {
+        return isInJiangJieProcess;
+    }
+
+    /**
+     * 讲解流程自动结束
+     */
+    public void JiangJieEnd(){
+        ActivityController.getInstance().finishTopActivity();
+        JiangJieactiveEnd();
+    }
+    /**
+     * 执行说话指令
+     * */
+    private void AiuiAction(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    long sleepTime = mJiangJieBeenList.get(pointIndex).getPointSleepTime()*1000;
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try{
+                    isArrivalPoint = false;
+                    RyApplication.getLog().d("jiangjieController "+mJiangJieBeenList.toString());
+                    if(pointIndex<mJiangJieBeenList.size()){
+                        if(mJiangJieBeenList.get(pointIndex).getNextPointSpeak()!=null
+                                && !mJiangJieBeenList.get(pointIndex).getNextPointSpeak().isEmpty()){
+                            AiuiController.getInstance().post(mJiangJieBeenList.get(pointIndex).getNextPointSpeak());
+                            pointIndex++;
+                        }else{
+                            JiangJieEnd();
+                        }
+                    }else{
+                        JiangJieEnd();
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                    JiangJieEnd();
+                }
+            }
+        }).start();
+    }
+
+    /**
+     * 讲解流程底盘动作
+     */
+    private void ChassisAction(){
+        try{
+            isArrivalPoint = false;
+            if(pointIndex<mJiangJieBeenList.size()){
+                ChassisController.getInstance().post(mJiangJieBeenList.get(pointIndex).getPointName());
+            }
+        }catch (Exception e){
+            JiangJieEnd();
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 轮播页面页面展示
+     */
+    private void ImageShow(){
+
+    }
+
+    /**
+     * 轮播页面关闭
+     */
+    private void ImageClose(){
+
+    }
+
+    /**
+     * 处理讲解数据
+     * @param value 讲解的数据值
+     */
+    public void initJiangJieData(String value){
+        if(value.contains("#")){
+            List<JiangJieBean> jiangJieBeanList = new ArrayList<>();
+            String[] yindaoStrs = value.split("#");
+            if (yindaoStrs.length>0){
+                for (String yindaoStr:yindaoStrs){
+                    JiangJieBean jiangJieBean = new JiangJieBean();
+                    if(yindaoStr.contains(";")){
+                        String[] infos = yindaoStr.split(";");
+                        if(infos.length>0){
+                            jiangJieBean.setPointName(infos[0]);
+                        }
+                        if(infos.length>1){
+                            jiangJieBean.setPointInstructions(infos[1]);
+                        }
+                        if(infos.length>2){
+                            jiangJieBean.setPointSleepTime(Integer.parseInt(infos[2]));
+                        }
+                        if(infos.length>3){
+                            jiangJieBean.setNextPointSpeak(infos[3]);
+                        }
+                        jiangJieBeanList.add(jiangJieBean);
+                    }
+                }
+                setJiangJieBeenList(jiangJieBeanList);
+            }
+        }
+    }
+
+}

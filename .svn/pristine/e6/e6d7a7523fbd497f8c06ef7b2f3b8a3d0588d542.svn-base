@@ -1,0 +1,266 @@
+package com.ist.rylibrary.base.controller;
+
+import com.ist.asr.RRasr;
+import com.ist.asr.RRtts;
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.event.AiuiMessageEvent;
+import com.ist.rylibrary.base.event.NetWorkMessageEvent;
+import com.ist.rylibrary.base.listener.BaseAiuiListener;
+import com.ist.rylibrary.base.listener.BaseRRasrListener;
+import com.ist.rylibrary.base.listener.BaseRRttsListener;
+import com.ist.rylibrary.base.service.AiuiService;
+import com.ist.rylibrary.myfloatwindow.controller.FloatWindowController;
+import com.ist.rylibrary.myfloatwindow.service.FloatWindowService;
+import com.renying.m4.AIUI2;
+import com.renying.m4.AiuiObj;
+import com.renying.m4.Xunfei;
+
+import org.greenrobot.eventbus.EventBus;
+/**
+ * Created by minyuchun on 2017/3/25.
+ * aiui控制类
+ */
+
+public class AiuiController {
+    /**播放的实例*/
+    private AiuiObj aiui;
+    /**播放的类型*/
+    private String AiuiType;
+    /**语音合成对象*/
+    private RRasr asr;
+    /**语音识别对象*/
+    private RRtts tts;
+
+    private AiuiListener mAiuiListener;
+
+    private static AiuiController mAiuiController;
+
+    private YinDaoListener mYinDaoListener;
+
+    private JiangJieListener mJiangJieListener;
+
+    public static AiuiController getInstance(){
+        if(mAiuiController == null){
+            mAiuiController = new AiuiController();
+        }
+        return mAiuiController;
+    }
+
+    public interface AiuiListener{
+        /***
+         *  aiui自定义返回
+         * @param aiuiType 返回类型
+         * @param isCustom  是否自定义
+         * @param message  返回的数据
+         */
+        void AiuiMessage(int aiuiType,boolean isCustom,String message);
+    }
+
+    /***
+     * 添加监听
+     * @param aiuiListener 监听
+     */
+    public void setAiuiListener(AiuiListener aiuiListener){
+        this.mAiuiListener = aiuiListener;
+    }
+
+    /**
+     * 发送消息
+     * @param type aiui类型
+     */
+    public void post(int type){
+        post(type,false,null);
+    }
+
+    /**
+     * 发送消息
+     * @param message  发送的信息
+     */
+    public void post(String message){
+        post(AiuiService.AIUI_TYPE_DEFAULT,false,message);
+    }
+
+    /**
+     * 发送消息
+     * @param isCustom  是否自定义
+     * @param message  发送的信息
+     */
+    public void post(boolean isCustom,String message){
+        post(AiuiService.AIUI_TYPE_DEFAULT,isCustom,message);
+    }
+    /***
+     * 发送信息
+     * @param type aiui类型
+     * @param isCustom 是否自定义
+     * @param message 发送的信息
+     */
+    public void post(int type,boolean isCustom,String message){
+        EventBus.getDefault().post(new AiuiMessageEvent(type,isCustom,message));
+    }
+
+    /**
+     * 回收方法
+     * @param type  消息类型
+     * @param isCustom  是否自定义
+     * @param message  消息内容
+     */
+    public void recovery(int type,boolean isCustom,String message){
+        if(mAiuiListener!=null){
+            mAiuiListener.AiuiMessage(type,isCustom,message);
+        }
+    }
+    /***
+     * 初始化语音合成模块
+     */
+    public void initRRArs(){
+        try{
+            RRasr.InitApp(RyApplication.getContext());
+            asr = new RRasr();
+            asr.SetDefaultAnswer("哎呀，我没听明白呢;贵宾，您说慢点，RR还在学习中呢;没有听清楚呢，您在大声的说一遍");
+            BaseRRasrListener mRRasrListener = new BaseRRasrListener();
+            asr.InitActivity(RyApplication.getContext(), mRRasrListener, true);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /***
+     * 初始化语音识别模块
+     */
+    public void initRRtts(){
+        try{
+            tts = new RRtts();
+            BaseRRttsListener mRRttsListener = new BaseRRttsListener(tts);
+            tts.InitActivity(RyApplication.getContext(), mRRttsListener, "local");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * aiui配置觉醒
+     */
+    public void AiuiWork() {
+        try{
+//            Log.d(TAG,"查看aiui 是否为null "+aiui);
+            if (aiui == null) {
+                aiui = getNewObj();
+                BaseAiuiListener mAIUIListener = new BaseAiuiListener(AiuiType);
+                if(aiui!=null){
+                    aiui.SetContext(RyApplication.getContext());
+                    aiui.SetAppid("5822bd1c");
+                    aiui.SetAppKey("f1ddfdef81e9ce61aefb31e902fc1c14");
+                    aiui.AIUIWork(mAIUIListener, 0, 0, "");
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 新建aiui实例
+     * @return  返回新建的aiui
+     */
+    private AiuiObj getNewObj() {
+            AiuiObj obj = null;
+            try{
+                AiuiType = AiuiObj.getAiuiType();
+                if (AiuiType.equals("aiui")) {
+                    obj = new AIUI2();
+                }else{
+                    obj = new Xunfei();
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+        }
+        return obj;
+    }
+    /**
+     * AIUI/5麦唤醒，统一调用该函数
+     */
+    public void AiuiWakeUp() {
+        try{
+            if (aiui!=null) {
+                aiui.WakeUp();
+                RyApplication.getLog().d("AiuiController aiui唤醒");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /***
+     * 识别停止
+     */
+    public void AiuiSleep(){
+        try{
+            if (aiui!=null){
+                aiui.ResetAiui();//休眠-停止识别
+                RyApplication.getLog().d("AiuiController aiui识别停止");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**停止语音合成*/
+    public void stopTTS() {
+        if (tts != null) {
+            tts.Cancel();
+        }
+    }
+    /**
+     * 开始语音合成
+     * @param text 播放的语音内容
+     */
+    public void startTTS(final String text) {
+        if (tts != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    int result = tts.Start(text);
+                    FloatWindowController.getInstance().post(text,null);
+                }
+            }).start();
+        }
+    }
+
+    /**
+     * 判断 问题是否合理
+     * @return  是否是合格的问题
+     */
+    private synchronized boolean isAskRationality(String ask){
+        return !(ask!=null && ask.length()<2);
+    }
+
+
+    /***
+     * 设置引导流程的监听
+     * @param yinDaoListener
+     */
+    public void setYinDaoListener(YinDaoListener yinDaoListener) {
+        mYinDaoListener = yinDaoListener;
+    }
+
+    public void setJiangJieListener(JiangJieListener jiangJieListener) {
+        mJiangJieListener = jiangJieListener;
+    }
+
+    public void setJiangJieComplete(boolean isComplete){
+        if(mJiangJieListener!=null){
+            mJiangJieListener.JiangJieComplete(isComplete);
+        }
+    }
+
+    /***
+     * 　底盘监听回调
+     */
+    public interface YinDaoListener{
+        void YinDaoComplete(boolean isComplete);
+    }
+
+    /***
+     * 　讲解的底盘监听
+     */
+    public interface JiangJieListener{
+        void JiangJieComplete(boolean isComplete);
+    }
+}

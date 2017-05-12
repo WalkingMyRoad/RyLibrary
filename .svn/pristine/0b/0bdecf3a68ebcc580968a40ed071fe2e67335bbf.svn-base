@@ -1,0 +1,147 @@
+package com.ist.rylibrary.base.util;
+
+import android.util.Log;
+
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.controller.SharedPreferencesController;
+
+import java.io.IOException;
+
+import okhttp3.FormBody;
+import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okio.BufferedSink;
+import okio.GzipSink;
+import okio.Okio;
+
+/**
+ * Created by minyuchun on 2017/4/5.
+ * 网络强求拦截器
+ */
+
+public class HttpInterceptorUtil implements Interceptor{
+
+    private String TAG = "MyInterceptor";
+    //这个chain里面包含了request和response，所以你要什么都可以从这里拿
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        RyApplication.getLog().d("---------请求开始----------- "+chain.connection());
+        //请求初始时间
+        long startTime = System.nanoTime();
+        //request 请求消息
+        Request request = processRequest(chain.request());
+        //response 响应消息
+        Response response = processResponse(
+                startTime,chain.proceed(request));
+        RyApplication.getLog().d("---------请求结束-----------");
+        return response;
+//        return chain.proceed(chain.request());
+    }
+
+    /**
+     * 请求消息解析
+     * @param request 请求
+     * @return 返回请求
+     */
+    private Request processRequest(Request request){
+        try{
+            if(request!=null){
+                StringBuilder sb = new StringBuilder();
+                String method = request.method();//请求的模式
+                sb.append("请求模式 method = "+method);
+                //新建请求build
+                if (method!=null && method.equals("GET")){
+                    Request.Builder newBuilder= request.newBuilder();
+                    newBuilder.header("Content-Encoding", "gzip");//添加头部信息
+                    newBuilder.header("Content-Type","application/json;charset=UTF-8");
+                    //获取并判断请求url
+                    HttpUrl url = request.url();
+                    if(url!=null){
+                        sb.append("\n\t | URL ="+url.toString());
+                        //添加请求的默认参数
+                        HttpUrl.Builder authorizedUrlBuilder = url.newBuilder()
+                                .scheme(url.scheme())
+                                .host(url.host())
+                                .addQueryParameter("mallId", SharedPreferencesController.getInstance().getMailId())
+                                .addQueryParameter("robotNo",SharedPreferencesController.getInstance().getRobotNumber());
+                        newBuilder.url(authorizedUrlBuilder.build());
+                        //获取判读请求体
+                        RequestBody body = request.body();
+                        if(body!=null){
+                            newBuilder.method(method,gzip(body));
+                            if(body instanceof FormBody){
+                                FormBody formBody = (FormBody)body;
+                                for (int i = 0; i < formBody.size(); i++) {
+                                    sb.append(formBody.encodedName(i) + "=" + formBody.encodedValue(i) + "&");
+                                }
+                                if(sb.length()>0){
+                                    sb.delete(sb.length() - 1, sb.length());
+                                }
+                            }
+                        }
+                    }
+                    request = newBuilder.build();
+                }
+
+//                request = request.newBuilder()
+//                        .header("Content-Encoding", "gzip")
+//                        .method(request.method(), gzip(request.body()))
+//                        .build();
+                if(request.headers()!=null){
+                    sb.append("\n\t"+request.headers().toString());
+                }
+                RyApplication.getLog().d("网络请求链接"+sb.toString());
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return request;
+    }
+
+//    private void addGet
+
+
+    /**
+     * 处理响应的内容
+     * @param startTime  请求开始时间
+     * @param response  请求响应
+     * @return  返回响应
+     */
+    private Response processResponse(long startTime,Response response){
+        if (response!=null){
+            long endTime = System.nanoTime();
+            Log.d(TAG,String.format("Received response for %s in %.1fms%n%s",
+                    response.request().url(), (endTime - startTime) / 1e6d, response.headers()));
+            response = response.newBuilder()
+                    .header("Cache-Control","max-age=0")//缓存 60秒
+                    .build();
+
+        }
+        return response;
+    }
+
+    private RequestBody gzip(final RequestBody body){
+        return new RequestBody() {
+            @Override
+            public MediaType contentType() {
+                return body.contentType();
+            }
+
+            @Override
+            public long contentLength() throws IOException {
+                return -1;// We don't know the compressed length in advance!
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                BufferedSink gzipSink = Okio.buffer(new GzipSink(sink));
+                body.writeTo(gzipSink);
+                gzipSink.close();
+            }
+        };
+    }
+}

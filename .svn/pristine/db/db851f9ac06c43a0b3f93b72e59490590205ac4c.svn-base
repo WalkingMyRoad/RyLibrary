@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="main$Generated" generated="true"><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res"/><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/generated/res/rs/debug"/><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/generated/res/resValues/debug"/></dataSet><dataSet config="debug$Generated" generated="true"><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/debug/res"/></dataSet><dataSet config="main" generated-set="main$Generated"><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res"><file name="animation_microphone_sound_dynamic" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/animation_microphone_sound_dynamic.xml" qualifiers="" type="drawable"/><file name="dormancy" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/dormancy.jpg" qualifiers="" type="drawable"/><file name="float_big_bg" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/float_big_bg.png" qualifiers="" type="drawable"/><file name="float_big_head_person" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/float_big_head_person.png" qualifiers="" type="drawable"/><file name="float_big_head_robot" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/float_big_head_robot.png" qualifiers="" type="drawable"/><file name="float_big_icon_close" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/float_big_icon_close.png" qualifiers="" type="drawable"/><file name="float_small_voice_open" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/float_small_voice_open.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_1" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_1.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_2" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_2.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_3" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_3.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_4" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_4.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_5" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_5.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_6" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_6.png" qualifiers="" type="drawable"/><file name="microphone_sound_dynamic_7" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_dynamic_7.png" qualifiers="" type="drawable"/><file name="microphone_sound_static" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/microphone_sound_static.png" qualifiers="" type="drawable"/><file name="style_button_default" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/drawable/style_button_default.xml" qualifiers="" type="drawable"/><file name="activity_dormancy_base" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/layout/activity_dormancy_base.xml" qualifiers="" type="layout"/><file name="activity_frame" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/layout/activity_frame.xml" qualifiers="" type="layout"/><file name="view_float_big" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/layout/view_float_big.xml" qualifiers="" type="layout"/><file name="view_float_small" path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/layout/view_float_small.xml" qualifiers="" type="layout"/><file path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/values/colors.xml" qualifiers=""><color name="green">#00ff00</color><color name="red">#ff0000</color><color name="blue">#0000ff</color><color name="textColorSecondary">#aa66cc</color><color name="textColorPrimary">#33b5e5</color><color name="colorPrimaryDark">#303F9F</color><color name="colorPrimary">#3F51B5</color><color name="yellow">#ffff00</color><color name="colorAccent">#FF4081</color><color name="white">#ffffff</color></file><file path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/values/dimens.xml" qualifiers=""><dimen name="btn_txt_size_small">20sp</dimen><dimen name="activity_vertical_margin">16dp</dimen><dimen name="txt_size_72">72sp</dimen><dimen name="txt_size_20">20sp</dimen><dimen name="txt_size_31">31sp</dimen><dimen name="txt_size_30">30sp</dimen><dimen name="txt_size_26">26sp</dimen><dimen name="txt_size_25">25sp</dimen><dimen name="txt_size_17">17sp</dimen><dimen name="txt_size_28">28sp</dimen><dimen name="txt_size_27">27sp</dimen><dimen name="txt_size_38">38sp</dimen><dimen name="txt_size_22">22sp</dimen><dimen name="txt_size_33">33sp</dimen><dimen name="txt_size_21">21sp</dimen><dimen name="txt_size_32">32sp</dimen><dimen name="txt_size_24">24sp</dimen><dimen name="activity_horizontal_margin">16dp</dimen><dimen name="txt_size_23">23sp</dimen><dimen name="txt_size_34">34sp</dimen><dimen name="txt_size_19">19sp</dimen><dimen name="txt_size_18">18sp</dimen><dimen name="txt_size_29">29sp</dimen></file><file path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/values/strings.xml" qualifiers=""><string name="no_page">本章节等待开发</string><string name="space_english_2">  </string><string name="space_chinese_2">　　</string><string name="space_chinese_1">　</string><string name="space_english_1"> </string><string name="app_name">RYLibrary</string><string name="next_step">下一步</string><string name="last_step">上一步</string></file><file path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/main/res/values/styles.xml" qualifiers=""><style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item> 
+        <item name="android:textColorPrimary">@android:color/white</item>
+        
+        <item name="actionOverflowMenuStyle">@style/OverflowMenu</item>
+        
+        <item name="android:itemBackground">@android:color/white</item>
+    </style><style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:dividerHeight">1dp</item>
+    </style><style name="MyCustomToolBarStyle" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:textColorPrimary">@color/textColorPrimary</item>
+        <item name="android:textColorSecondary">@color/textColorSecondary</item>
+        <item name="android:textColor">@color/colorAccent</item>
+    </style><style name="Animation.Activity.Translucent.Style" parent="@android:style/Animation.Translucent">
+        <item name="android:windowEnterAnimation">@android:anim/slide_in_left</item>
+        <item name="android:windowExitAnimation">@android:anim/slide_out_right</item>
+    </style><style name="Dialog" parent="android:style/Theme.Dialog">
+        
+        <item name="android:windowBackground">@android:color/transparent</item>
+        
+        <item name="android:windowNoTitle">true</item>
+        
+        <item name="android:windowIsFloating">true</item>
+        
+        <item name="android:backgroundDimEnabled">true</item>
+        
+        <item name="android:windowFrame">@null</item>
+        
+        <item name="android:windowContentOverlay">@null</item>
+        
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        
+        <item name="android:windowIsTranslucent">true</item>
+        
+        <item name="android:windowFullscreen">true</item>
+    </style><style name="OverflowMenu" parent="Widget.AppCompat.PopupMenu.Overflow">
+        
+        <item name="overlapAnchor">false</item>
+    </style><style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style><style name="AppTheme_full" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item> 
+        
+        <item name="android:windowAnimationStyle">@style/Animation.Activity.Translucent.Style</item>
+        
+        <item name="android:windowBackground">@android:color/transparent</item>
+        
+        <item name="android:windowIsTranslucent">true</item>
+        
+        <item name="android:windowFullscreen">true</item>
+        
+        <item name="android:windowContentOverlay">@null</item>
+    </style></file></source><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/generated/res/rs/debug"/><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/generated/res/resValues/debug"/></dataSet><dataSet config="debug" generated-set="debug$Generated"><source path="/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/src/debug/res"/></dataSet><mergedItems/></merger>

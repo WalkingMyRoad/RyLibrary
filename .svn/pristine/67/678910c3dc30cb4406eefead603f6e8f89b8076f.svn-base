@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="1150dp"
+             android:layout_height="105dp"
+             android:id="@+id/big_window_layout"
+             android:layout_marginRight="50dp">
+    <LinearLayout
+        android:layout_width="1080dp"
+        android:layout_height="80dp"
+        android:orientation="horizontal"
+        android:gravity="center_horizontal"
+        android:background="@drawable/float_big_bg"
+        android:layout_gravity="center_vertical"
+        android:paddingRight="10dp">
+        <LinearLayout
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical|left"
+            android:orientation="horizontal"
+            android:padding="10dp" >
+            <!--机器人说话头像-->
+            <ImageView
+                android:id="@+id/robot_imge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/float_big_head_robot"/>
+            <!--机器人说的话显示-->
+            <TextView
+                android:id="@+id/rr_speak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:text=""
+                android:textColor="@android:color/black"
+                android:textSize="21sp"
+                android:layout_marginLeft="10dip"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/image"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="center_vertical"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <!--无声音时图片 以及动态动画-->
+            <ImageView
+                android:id="@+id/sonic_static_dynamic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/microphone_sound_static"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical|right"
+            android:padding="10dp" >
+            <!--人说的话-->
+            <TextView
+                android:id="@+id/user_speak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="@android:color/black"
+                android:textSize="21sp"
+                android:layout_marginRight="10dp"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+            <!--人的头像-->
+            <ImageView
+                android:id="@+id/user_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/float_big_head_person" />
+        </LinearLayout>
+    </LinearLayout>
+    <!--关闭按钮-->
+    <Button
+        android:id="@+id/close_float"
+        android:layout_width="105dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/float_big_icon_close"
+        android:layout_gravity="center|right" />
+
+</FrameLayout>

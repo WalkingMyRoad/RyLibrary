@@ -1,0 +1,298 @@
+package com.ist.rylibrary.base.controller;
+
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.entity.JiangJieBean;
+import com.ist.rylibrary.base.listener.JiangJieAiuiListener;
+import com.ist.rylibrary.base.listener.JiangjieChassisListener;
+import com.ist.rylibrary.base.service.AiuiService;
+import com.ist.rylibrary.base.util.BaseLogUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by minyuchun on 2017/3/30.
+ * 讲解流程控制类
+ */
+
+public class JiangJieController implements JiangJieAiuiListener,JiangjieChassisListener{
+    /**讲解控制实例*/
+    private static JiangJieController sJiangJieController;
+    /**讲解流程的列表*/
+    private List<JiangJieBean> mJiangJieBeenList;
+    /**当前点位的坐标*/
+    private int pointIndex;
+    /**当前运行的讲解点位流程*/
+    private JiangJieBean mJiangJieBean;
+    /**是否已到达点位说话，用于区分到达后说话与去下一个点说话*/
+//    private boolean isArrivalPoint;
+    /**是否是在讲解过程*/
+    private boolean isInJiangJieProcess;
+    /**讲解流程的Aiui监听器*/
+    private JiangJieAiuiListener mJiangJieAiuiListener;
+    /**讲解流程的底盘监听器*/
+    private JiangjieChassisListener mJiangjieChassisListener;
+    /**讲解流程的日志记录*/
+    private BaseLogUtil log;
+
+    /***
+     * 获取实例
+     * @return 返回实例
+     */
+    public static JiangJieController getInstance(){
+        if(sJiangJieController == null){
+            sJiangJieController = new JiangJieController();
+        }
+        return sJiangJieController;
+    }
+
+    private JiangJieController(){
+        try{
+            log = new BaseLogUtil(this.getClass());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 讲解流程开始
+     */
+    public void JiangJieStart(){
+        try{
+            RyApplication.getLog().d("JiangJieController 讲解流程开始了");
+            isInJiangJieProcess = true;
+            pointIndex = 0;//设置出事位置
+            AiuiController.getInstance().post(AiuiService.AIUI_TYPE_CLOSE);  //关闭aiui识别与
+            if(mJiangJieBeenList!=null && mJiangJieBeenList.size()>0){
+                AiuiAction();
+            }
+        }catch (Exception e){
+            JiangJieEnd();
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 讲解流程手动结束
+     */
+    public void JiangJieactiveEnd(){
+        RyApplication.getLog().d("JiangJieController 讲解流程结束了");
+        isInJiangJieProcess = false;
+        AiuiController.getInstance().post(AiuiService.AIUI_TYPE_OPEN);
+        ChassisController.getInstance().getHuman().stop();
+    }
+
+    /***
+     * 是否在讲解流程
+     * @return 返回是否在讲解流程
+     */
+    public boolean isInJiangJieProcess() {
+        return isInJiangJieProcess;
+    }
+
+    /**
+     * 讲解流程自动结束
+     */
+    public void JiangJieEnd(){
+        ActivityController.getInstance().finishTopActivity();
+        JiangJieactiveEnd();
+    }
+    /**
+     * 执行AIUi说话指令
+     * */
+    private void AiuiAction(){
+        try{
+            mJiangJieBean = mJiangJieBeenList.get(pointIndex);//获取当前讲解的类
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {//停止说话的休眠间隔时间
+                        long sleepTime = mJiangJieBean.getPointSleepTime()*1000;
+                        log.d("流程开始，延迟 "+sleepTime);
+                        if(sleepTime>0){
+                            Thread.sleep(sleepTime);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    try{
+                        log.d("当前点位讲解流程的数据 "+mJiangJieBean.toString());
+                        if(mJiangJieBean.getNextPointSpeak()!=null && !mJiangJieBean.getNextPointSpeak().isEmpty()){//存在说话的内容
+                            AiuiController.getInstance().post(mJiangJieBean.getNextPointSpeak());
+                            pointIndex ++ ;
+                            mJiangJieBean = mJiangJieBeenList.get(pointIndex);
+                            setJiangJieAiuiListener(JiangJieController.this);
+                        }else{
+                            ChassisMove();
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                        JiangJieEnd();
+                    }
+                }
+            }).start();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**
+     * 轮播页面页面展示
+     */
+    private void ImageShow(){
+
+    }
+
+    /**
+     * 轮播页面关闭
+     */
+    private void ImageClose(){
+
+    }
+    /**
+     * 处理讲解数据
+     * @param value 讲解的数据值
+     */
+    public void initJiangJieData(final String value){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    if(value.contains("#")){
+                        List<JiangJieBean> jiangJieBeanList = new ArrayList<>();
+                        String[] yindaoStrs = value.split("#");
+                        if (yindaoStrs.length>0){
+                            for (String yindaoStr:yindaoStrs){
+                                JiangJieBean jiangJieBean = new JiangJieBean();
+                                if(yindaoStr.contains(";")){
+                                    String[] infos = yindaoStr.split(";");
+                                    if(infos.length>0){//到达点位的名称
+                                        jiangJieBean.setPointName(infos[0]);
+                                        jiangJieBean.setPointInstructions(infos[0]+"_jiangjie");
+                                    }
+                                    if(infos.length>1){//是否在到达点位后播放引导语
+//                                        jiangJieBean.setPointInstructions();
+                                        jiangJieBean.setIsSpeakArrive(infos[1]);
+                                    }
+                                    if(infos.length>2){
+                                        jiangJieBean.setPointSleepTime(Integer.parseInt(infos[2]));
+                                    }
+                                    if(infos.length>3){
+                                        jiangJieBean.setNextPointSpeak(infos[3]);
+                                    }
+                                    jiangJieBeanList.add(jiangJieBean);
+                                }
+                            }
+                            setJiangJieBeenList(jiangJieBeanList);
+                        }
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    @Override
+    public boolean onAiuiComplete(boolean isComplete) {
+        try {
+            log.d("aiui语音播放完成 是否正常播放完成 "+isComplete);
+            if(isComplete){
+                if(mJiangJieBean.isArrivalPoint()){//是否到达下一个点位了
+                    ImageClose();
+                    AiuiAction();
+                }else{
+                    ChassisMove();
+                }
+            }else{
+                JiangJieEnd();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            JiangJieEnd();
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onChassisComplete(boolean isComplete, String where) {
+        log.d("到达点位 ="+where +",是否移动完成 = "+isComplete);
+        try{
+            if(isComplete){
+                if(where.equals(mJiangJieBean.getPointName())){//到达地址与缓存一致
+                    mJiangJieBean.setArrivalPoint(true);//设置已到达点位
+                    setJiangJieAiuiListener(this);//设置监听
+                    ImageShow();
+                    if (mJiangJieBean.getIsSpeakArrive().equals("1")){
+                        log.d("当前点位需要播放语音");
+                        SceneController.getInstance().rrPeople(mJiangJieBean.getPointInstructions(),null);//说到达引导语
+                    }else{
+                        log.d("当前点位不需要播放语音");
+                        getJiangJieAiuiListener().onAiuiComplete(true);
+                    }
+                }else{
+                    log.d("到达的位置与当前需要到达的位置不一样");
+                    JiangJieEnd();
+                }
+            }else{
+                JiangJieEnd();
+            }
+        }catch (Exception e){
+            JiangJieEnd();
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    /***
+     * 下一个点位最先处理的底盘移动
+     */
+    private void ChassisMove(){
+        log.d("底盘移动开始了");
+        setJiangjieChassisListener(JiangJieController.this);
+        ChassisController.getInstance().post(mJiangJieBean.getPointName());
+//        pointIndex++;
+//        if(pointIndex < mJiangJieBeenList.size()){
+//            mJiangJieBean = mJiangJieBeenList.get(pointIndex);
+//            setJiangjieChassisListener(JiangJieController.this);
+//            ChassisController.getInstance().post(mJiangJieBean.getPointName());
+//        }else{
+//            JiangJieEnd();
+//        }
+    }
+
+    @Override
+    public boolean onError() {
+        JiangJieEnd();
+        return true;
+    }
+
+
+    public JiangjieChassisListener getJiangjieChassisListener() {
+        return mJiangjieChassisListener;
+    }
+
+    public void setJiangjieChassisListener(JiangjieChassisListener jiangjieChassisListener) {
+        mJiangjieChassisListener = jiangjieChassisListener;
+    }
+    /***
+     * 设置讲解流程的监听
+     * @param jiangJieListener 传递new 监听
+     */
+    public void setJiangJieAiuiListener(JiangJieAiuiListener jiangJieListener) {
+        mJiangJieAiuiListener = jiangJieListener;
+    }
+    /**
+     * 获得讲解流程的监听
+     * @return  返回监听
+     */
+    public JiangJieAiuiListener getJiangJieAiuiListener() {
+        return mJiangJieAiuiListener;
+    }
+    /**
+     * 设置讲解数组
+     * @param jiangJieBeenList 讲解数组
+     */
+    public void setJiangJieBeenList(List<JiangJieBean> jiangJieBeenList) {
+        mJiangJieBeenList = jiangJieBeenList;
+    }
+}

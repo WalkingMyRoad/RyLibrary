@@ -1,0 +1,319 @@
+package com.ist.rylibrary.base.listener;
+
+import android.media.MediaPlayer;
+import android.util.Log;
+
+import com.google.gson.Gson;
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.controller.ActivityController;
+import com.ist.rylibrary.base.controller.AiuiController;
+import com.ist.rylibrary.base.controller.ChassisController;
+import com.ist.rylibrary.base.controller.JiangJieController;
+import com.ist.rylibrary.base.controller.MediaVoiceController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.controller.YinDaoController;
+import com.ist.rylibrary.base.entity.FinalQABean;
+import com.ist.rylibrary.base.entity.FinalQAnswerBean;
+import com.ist.rylibrary.base.service.AiuiService;
+import com.ist.rylibrary.base.util.ToolUtil;
+import com.ist.rylibrary.myfloatwindow.controller.FloatWindowController;
+import com.renying.m4.AIUIListener;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+/**
+ * Created by minyuchun on 2017/3/25.
+ */
+
+public class BaseAiuiListener implements AIUIListener{
+    /**播放的类型*/
+    private String AiuiType;
+    /**问答类*/
+    FinalQABean qAnswer = null;
+
+    public BaseAiuiListener(String aiuiType){
+        this.AiuiType = aiuiType;
+    }
+
+    @Override
+    public void onResultRaw(String s) {
+        //原始识别内容
+        RyApplication.getLog().d("原始语音 "+s);
+    }
+    @Override
+    public void onResult(JSONObject jsonObject) {
+        //语音识别结果返回
+        RyApplication.getLog().d("原始语音 "+jsonObject.toString());
+        MediaVoiceController.stopMP3();
+        if(!AiuiType.equals("aiui")){
+            qAnswer = analysis5(jsonObject);
+        }else{
+            qAnswer = analysisAiui(jsonObject);
+        }
+        RyApplication.getLog().d("原始语音解析 "+qAnswer.toString());
+        FloatWindowController.getInstance().post(null,qAnswer.getText());
+        SceneController.getInstance().rrPeople(qAnswer);
+    }
+
+    @Override
+    public void onError(String s) {
+
+    }
+
+    @Override
+    public void onStat(String s) {
+
+    }
+
+    @Override
+    public void onWakeup(int i, int i1) {
+
+    }
+
+    @Override
+    public void onSleep() {
+        try{
+            if(ActivityController.getInstance().isInBusiness() &&
+                    !YinDaoController.getInstance().isInYindaoProcess() &&
+                    !JiangJieController.getInstance().isInJiangJieProcess()){
+                AiuiController.getInstance().post(AiuiService.AIUI_TYPE_OPEN);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onSpeekBegin() {
+
+    }
+
+    @Override
+    public void onSpeekEnd() {
+
+    }
+
+    @Override
+    public void onSpeek(int i) {
+
+    }
+
+    @Override
+    public void onExit(String s, int i) {
+
+    }
+
+    @Override
+    public void onWifiStat(boolean b, String s) {
+
+    }
+
+    @Override
+    public void onCrash(String s) {
+
+    }
+
+    /***
+     * 5麦 解析
+     * @param jsonObject
+     */
+    private FinalQABean analysis5(JSONObject jsonObject){
+        Log.i("BaseAiuiListener","5麦开始解析");
+        FinalQABean qAnswer = new FinalQABean();
+        try{
+            if(jsonObject.has("text") && jsonObject.has("answer")){//普通答案
+                qAnswer.setText(jsonObject.getString("text"));
+                JSONObject jsAnswer = jsonObject.getJSONObject("answer");
+                FinalQAnswerBean finalQAnswerBean = new FinalQAnswerBean();
+                finalQAnswerBean.setText(jsAnswer.getString("text"));
+                qAnswer.setAnswer(finalQAnswerBean);//默认的回答
+//                if(jsonObject.has("moreResults")){
+//                    JSONArray jaMore = jsonObject.getJSONArray("moreResults");
+//                    for (int i=0;i<jaMore.length();i++){
+//                        JSONObject jsMroe = jaMore.getJSONObject(i);
+//                        if(jsMroe.has("service") && jsMroe.getString("service").equals("chat") && jsMroe.has("answer")){
+//                            qAnswer.addAnswer(getOrdinary(jsMroe.getJSONObject("answer")));
+//                        }
+//                    }
+//                }
+            }else if (jsonObject.has("text") && jsonObject.has("data") && jsonObject.has("service")) {
+                qAnswer.setText(jsonObject.getString("text"));
+                String service = jsonObject.getString("service");
+                JSONObject jsData = jsonObject.getJSONObject("data");
+                if (service.equals("weather")) {//天气
+                    FinalQAnswerBean finalQAnswerBean = new FinalQAnswerBean();
+                    finalQAnswerBean.setText(getWeather(jsData.getJSONArray("result")));
+                    qAnswer.setAnswer(finalQAnswerBean);
+                } else if (service.equals("music")) {//音乐
+                    FinalQAnswerBean finalQAnswerBean = new FinalQAnswerBean();
+                    finalQAnswerBean.setText(getMusic5(jsData.getJSONArray("result")));
+                    qAnswer.setAnswer(finalQAnswerBean);
+//                    qAnswer.addAnswer(getMusic5(jsData.getJSONArray("result")));
+                }
+            }else if(jsonObject.has("text")){
+                qAnswer.setText(jsonObject.getString("text"));
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return qAnswer;
+    }
+
+    /***
+     * aiui 解析
+     * @param jsonObject
+     */
+    private FinalQABean analysisAiui(JSONObject jsonObject){
+        //讯飞集成语义转换解析
+        FinalQABean finalQABean = null;
+        try{
+            Gson gson = new Gson();
+            finalQABean = gson.fromJson(jsonObject.toString(),FinalQABean.class);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            if(finalQABean==null){
+                finalQABean = new FinalQABean();
+                finalQABean.setService(ToolUtil.getInstance().readStringJson(jsonObject,"service"));
+                finalQABean.setText(ToolUtil.getInstance().readStringJson(jsonObject,"text"));
+                if(jsonObject.has("answer")){
+                    JSONObject jsAnswer = jsonObject.getJSONObject("answer");
+                    if(jsAnswer!=null){
+                        FinalQAnswerBean finalQAnswerBean = new FinalQAnswerBean();
+                        finalQAnswerBean.setText(ToolUtil.getInstance().readStringJson(jsAnswer,"text"));
+                    }
+                }
+            }
+            if(finalQABean!=null){
+                if (finalQABean.getService().equals("music")){
+
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return finalQABean;
+//            if(jsonObject.has("result")){
+//                JSONObject jsResult = jsonObject.getJSONObject("result");
+//                if(jsResult.has("intent")){
+//                    JSONObject jsIntent = jsResult.getJSONObject("intent");
+//                    if(jsIntent.has("text")){
+//                        String ask = jsIntent.getString("text");
+//                        finalQABean.setText(ask);
+//                    }
+//                    if(jsIntent.has("demand_semantic")){
+//                        JSONObject jsDemandSemantic = jsIntent.getJSONObject("demand_semantic");
+//                        if(jsDemandSemantic.has("service")){
+//                            String service = jsDemandSemantic.getString("service");
+//                            if(service.equals("weather")){//天气
+//                                if(jsIntent.has("data")){
+//                                    JSONObject jsData = jsIntent.getJSONObject("data");
+//                                    if(jsData.has("result")){
+//                                        finalQABean.addAnswer(getWeather(jsData.getJSONArray("result")));
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }else if(jsIntent.has("answer")){//普通答案
+//                        finalQABean.addAnswer(getOrdinary(jsIntent.getJSONObject("answer")));
+//                    }
+//                }
+//            }
+    }
+
+    /***
+     * 获得普通的答案
+     * @param jsAnswer
+     * @return
+     */
+    private String getOrdinary(JSONObject jsAnswer){
+        String answer = null;
+        try{
+            if(jsAnswer.has("text")){
+                answer = jsAnswer.getString("text");
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            return answer;
+        }
+    }
+    /**
+     * 解析5麦音乐
+     * @param jaResult
+     * @return
+     */
+    private String getMusic5(JSONArray jaResult){
+        String singer = null,name = null;
+        try{
+            if(jaResult.length()>0){
+                JSONObject jsAnswer = jaResult.getJSONObject(0);
+                final String path = jsAnswer.getString("downloadUrl");
+                name = jsAnswer.getString("name");
+                singer = jsAnswer.getString("singer");
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        MediaVoiceController.playVoice(path, new MediaPlayer.OnCompletionListener() {
+                            @Override
+                            public void onCompletion(MediaPlayer mediaPlayer) {
+//                                EventBus.getDefault().post(new AiuiMessageEvent("您是否还需要听其他的歌曲呢？如果需要，请报歌名！"));
+                                AiuiController.getInstance().post("您是否还需要听其他的歌曲呢？如果需要，请报歌名！");
+                            }
+                        }, new MediaPlayer.OnErrorListener() {
+                            @Override
+                            public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+                                return false;
+                            }
+                        });
+                    }
+                }).start();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if(singer!=null && name!=null){
+                return "请欣赏" + singer + "," + name;
+            }else{
+                return null;
+            }
+        }
+    }
+
+    /***
+     * 获取天气的解析
+     * @param jaResult
+     * @return
+     */
+    private String getWeather(JSONArray jaResult){
+        String answer = null;
+        try{
+            if(jaResult.length()>0){
+                JSONObject jsWeather = jaResult.getJSONObject(0);
+                if(jsWeather.has("weather")){
+                    answer = "天气"+jsWeather.getString("weather");
+                }
+                if(jsWeather.has("airQuality")){
+                    answer = answer+";空气质量是"+jsWeather.getString("airQuality");
+                }
+                if(jsWeather.has("tempRange")){
+                    answer = answer+";温度"+jsWeather.getString("tempRange");
+                }
+                if(jsWeather.has("wind")){
+                    answer = answer+";"+jsWeather.getString("wind");
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if(answer!=null){
+                return answer;
+            }else{
+                return null;
+            }
+        }
+    }
+
+}

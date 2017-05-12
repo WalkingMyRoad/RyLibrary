@@ -1,0 +1,132 @@
+package com.ist.rylibrary.base.service;
+
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
+
+import com.ist.rylibrary.base.controller.InfraredController;
+import com.ist.rylibrary.base.event.InfraredMessageEvent;
+import com.ist.rylibrary.base.util.TimeUtil;
+import com.ist.rylibrary.base.util.ToolUtil;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+
+/**
+ * Created by minyuchun on 2017/3/6.
+ * 广播服务
+ */
+
+public class InfraredService extends Service {
+    /**缓存intent*/
+    private static Intent sIntent;
+    /**有人的频率*/
+    private int personExitFrequency = 0;
+    /**无人的频率*/
+    private int personNonexistenceFrequency = 0;
+
+    /***
+     * 打开service
+     * @param context
+     */
+    public static void getInstance(Context context) {
+        sIntent = new Intent(context, InfraredService.class);
+        context.startService(sIntent);
+    }
+    /***
+     * 关闭服务
+     * @param context
+     */
+    public static void finishService(Context context){
+        if(sIntent!=null){
+            context.stopService(sIntent);
+            sIntent = null;
+        }
+
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        ToolUtil.getInstance().loadEventBus(this);
+        //动态添加广播
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction("android.intent.action.IRDOWN");//红外有人
+            filter.addAction("android.intent.action.IRUP");//红外无人
+            registerReceiver(myInfraredReceiver, filter);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return super.onStartCommand(intent, flags, startId);
+    }
+    /***
+     * 广播注册实例
+     */
+    public BroadcastReceiver myInfraredReceiver = new BroadcastReceiver() {
+        @SuppressWarnings("unused")
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if(!TimeUtil.getInstance().isLessTimeInterval(500)){
+                if (action.equals("android.intent.action.IRDOWN")) {
+                    personExitFrequency++;
+                    personNonexistenceFrequency = 0;
+                    InfraredController.getInstance().post(true,true,personExitFrequency);
+                } else if (action.equals("android.intent.action.IRUP")) {
+                    personNonexistenceFrequency++;
+                    personExitFrequency = 0;
+                    InfraredController.getInstance().post(true,false,personNonexistenceFrequency);
+                }
+            }
+        }
+    };
+
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        ToolUtil.getInstance().relieveEventBus(this);
+        //解除注册
+        try {
+            if (myInfraredReceiver != null) {
+                unregisterReceiver(myInfraredReceiver);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * eventsbus 回调
+     * @param event 回调的类参数
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMessageEvent(InfraredMessageEvent event) {
+        if (event != null) {
+            try {
+                if(event.isCustom()){//是否自定义处理
+                    InfraredController.getInstance().recovery(event.isCustom(),event.isPersonExist(),event.getFrequency());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}

@@ -1,0 +1,104 @@
+package com.ist.rylibrary.base.controller;
+
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnErrorListener;
+import android.util.Log;
+
+import java.io.IOException;
+
+public class MediaVoiceController {
+	
+	private static MediaPlayer mMediaPlayer;
+	
+	/**
+	 * 播放声音
+	 * @param filePath
+	 * @param onCompletionListenter
+	 */
+	public static void playVoice(String filePath,MediaPlayer.OnCompletionListener onCompletionListenter,OnErrorListener onErrorListener){
+		try{
+			if(mMediaPlayer==null){
+				mMediaPlayer=new MediaPlayer();
+				mMediaPlayer.setOnErrorListener( new OnErrorListener() {
+					@Override
+					public boolean onError(MediaPlayer mp, int what, int extra) {
+						// TODO Auto-generated method stub
+						mMediaPlayer.reset();
+						return false;
+					}
+				});
+			}else{
+				mMediaPlayer.reset();
+			}
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+		try {
+			mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+			mMediaPlayer.setOnCompletionListener(onCompletionListenter);
+			mMediaPlayer.setOnErrorListener(onErrorListener);
+			mMediaPlayer.setDataSource(filePath);
+			mMediaPlayer.prepare();
+			mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+				@Override
+				public void onPrepared(MediaPlayer mediaPlayer) {
+					Log.i("MediaVoiceController","准备好了放音乐");
+					mMediaPlayer.start();
+				}
+			});
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 	停止播放
+	 */
+	public static void pause(){
+		if(mMediaPlayer!=null && mMediaPlayer.isPlaying()){
+			mMediaPlayer.pause();
+		}
+	}
+	/**
+	 * 重新开始播放
+	 */
+	public static void resume(){
+		if(mMediaPlayer!=null){
+			mMediaPlayer.start();
+		}
+	}
+	
+	/**
+	 * 释放资源
+	 */
+	public static void release(){
+		if(mMediaPlayer!=null){
+			mMediaPlayer.release();
+			mMediaPlayer=null;
+		}
+	}
+
+	/**
+	 * 停止语音合成
+	 */
+	public static void stopMP3() {
+		if (mMediaPlayer != null) {
+			if(mMediaPlayer.isPlaying()){
+				mMediaPlayer.stop();
+			}
+			mMediaPlayer.release();
+			mMediaPlayer = null;
+		}
+	}
+}

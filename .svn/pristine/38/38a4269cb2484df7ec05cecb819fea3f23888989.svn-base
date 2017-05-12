@@ -1,0 +1,67 @@
+package com.ist.rylibrary.base.entity;
+
+/**
+ * Created by minyuchun on 2017/3/30.
+ * 基础的问答类
+ */
+
+public class BaseActionBean {
+    /***
+     * 动作之前要说的话，第一部执行
+     */
+    private String talkBeforeAction;
+    /***
+     * 是否在语音结束后才执行动作
+     */
+    private boolean isActionAfterTalk;
+    /**
+     *  动作，在语音说完后执行
+     */
+    private String action;
+    /***
+     *  动作发生错误后说的话，在动作发生错误时
+     */
+    private String talkErrorAction;
+
+    public String getTalkBeforeAction() {
+        return talkBeforeAction;
+    }
+
+    public void setTalkBeforeAction(String talkBeforeAction) {
+        this.talkBeforeAction = talkBeforeAction;
+    }
+
+    public boolean isActionAfterTalk() {
+        return isActionAfterTalk;
+    }
+
+    public void setActionAfterTalk(boolean actionAfterTalk) {
+        isActionAfterTalk = actionAfterTalk;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public String getTalkErrorAction() {
+        return talkErrorAction;
+    }
+
+    public void setTalkErrorAction(String talkErrorAction) {
+        this.talkErrorAction = talkErrorAction;
+    }
+
+    @Override
+    public String toString() {
+        return "BaseActionBean{" +
+                "talkBeforeAction='" + talkBeforeAction + '\'' +
+                ", isActionAfterTalk=" + isActionAfterTalk +
+                ", action='" + action + '\'' +
+                ", talkErrorAction='" + talkErrorAction + '\'' +
+                '}';
+    }
+}

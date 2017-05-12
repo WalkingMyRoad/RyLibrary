@@ -1,0 +1,8 @@
+package com.ist.rylibrary.base.entity;
+
+/**
+ * Created by minyuchun on 2017/4/25.
+ */
+
+public class AllInfoByRobotIdBean {
+}

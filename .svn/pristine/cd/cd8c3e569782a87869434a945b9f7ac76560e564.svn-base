@@ -1,0 +1,197 @@
+package com.ist.rylibrary.base.util;
+
+import android.content.Context;
+import android.util.Log;
+
+import com.ist.rylibrary.base.controller.SharedPreferencesController;
+import com.ist.rylibrary.base.inter.BaseHttpServiceInter;
+import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.Interceptor;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
+/**
+ * Created by minyuchun on 2017/1/13.
+ */
+
+public class HttpUtil {
+    private BaseLogUtil log = new BaseLogUtil(this.getClass());
+    /**默认的接口循环调用次数*/
+    private int MaxLoadTime=2;
+    /**默认的超时时间*/
+    private int ConnectOutTime=5;
+    /**默认的主url地址*/
+    private String hostUrl="http://192.168.0.8:8883/rrjd_test/";
+    private String defaultHost = "http://192.168.0.8:8883/rrjd_test/";
+    /**okhttp实例*/
+    private OkHttpClient mOkHttpClient;
+    /**网络访问循环次数*/
+    private int LoadTimes = 0;
+    /**连接监听*/
+    private HttpListener mHttpListener;
+
+    private Retrofit retrofit;
+
+    private BaseHttpServiceInter myService;
+
+    public interface HttpListener{
+        public void onFailure(Call call, Exception e);
+        public void onResponse(Call call, String message);
+    }
+
+    /**
+     * 获取 接口调用的Retrofit
+     * @return retrofit
+     */
+    public Retrofit getMyRetrofit(){
+        retrofit = initRetrofit(hostUrl);
+        if(retrofit!=null)
+            return retrofit;
+        else
+            return null;
+    }
+
+    /**
+     * 获取基础的 接口服务
+     * @return 服务接口实例
+     */
+    public BaseHttpServiceInter getMyBaseService(){
+        retrofit = initRetrofit(hostUrl);
+        if(retrofit!=null){
+            return retrofit.create(BaseHttpServiceInter.class);
+        }else
+            return null;
+    }
+
+    public HttpUtil(){
+        hostUrl = SharedPreferencesController.getInstance().getData("host");
+        if(hostUrl == null){
+            hostUrl = defaultHost;
+        }else if(hostUrl.equals("")){
+            hostUrl = "";
+        }else if(!hostUrl.endsWith("/")){
+            hostUrl = hostUrl + File.separator;
+        }
+    }
+
+    /**
+     * 初始化 Retrofit
+     * @param url 服务器基础路径
+     */
+    private Retrofit initRetrofit(String url){
+        log.d("初始化日志路线 "+url);
+        if (url.length()>5){
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .retryOnConnectionFailure(true)
+                    .addNetworkInterceptor(new HttpInterceptorUtil())
+                    .connectTimeout(ConnectOutTime, TimeUnit.SECONDS)
+                    .build();
+            Retrofit retrofit = new Retrofit.Builder()
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                    .baseUrl(url)
+                    .client(client)
+                    .build();
+            return retrofit;
+        }else{
+            return null;
+        }
+    }
+
+
+
+//    private void sendNetWorkInterFaceMain(final int MaxLoadTime, int ConnectOutTime, String url, final HttpListener listener, Map<String,String>  paramsMap){
+//        try{
+//
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    /***
+//     * 发送http请求
+//     * @param MaxLoadTime  重试次数
+//     * @param ConnectOutTime  超时时间
+//     * @param url  访问路径
+//     * @param listener  返回监听
+//     * @param paramsMap  文字参数
+//     * @param file  上传文件
+//     */
+//    private void sendNetWorkInterFaceMain(Context mContext,final int MaxLoadTime, int ConnectOutTime, String url, final HttpListener listener, Map<String,String>  paramsMap,File file){
+//        try{
+//            mOkHttpClient = new OkHttpClient.Builder()
+////                    .addInterceptor(new HttpInterceptorUtil())//设置log日志输出
+//                    .addNetworkInterceptor(new HttpInterceptorUtil())
+//                    .connectTimeout(ConnectOutTime, TimeUnit.SECONDS)//设置网络超时时间
+//                    .build(); ;
+//            if(url.indexOf("http://") == -1){
+//                url = hostUrl + url;
+//            }
+//            MultipartBody.Builder requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM);
+//            if(file != null){
+//                // MediaType.parse() 里面是上传的文件类型。
+//                RequestBody body = RequestBody.create(MediaType.parse("image/*"), file);
+//                // 参数分别为， 请求key ，文件名称 ， RequestBody
+//                requestBody.addFormDataPart("userFace", file.getName(), body);
+//            }
+//            Set<Map.Entry<String,String>> entries = paramsMap.entrySet();
+//            for (Map.Entry<String, String> entry : entries) {
+//                requestBody.addFormDataPart(entry.getKey(),entry.getValue());
+//            }
+//
+//            Request request=new Request.Builder()
+//                    .url(url)
+//                    .post(requestBody.build())
+//                    .tag(mContext)
+//                    .build();
+//            Call call = mOkHttpClient.newCall(request);
+//            call.enqueue(new Callback() {
+//                @Override
+//                public void onFailure(Call call, IOException e) {
+//                    if(e.getClass().equals(SocketTimeoutException.class) && LoadTimes<MaxLoadTime)//如果超时并未超过指定次数，则重新连接
+//                    {
+//                        log.d("网络连接超时，重新连接");
+//                        LoadTimes++;
+//                        mOkHttpClient.newCall(call.request()).enqueue(this);
+//                    }else {
+//                        log.d(LoadTimes+" 连接失败 ");
+//                        LoadTimes = 0;
+//                        e.printStackTrace();
+//                        listener.onFailure(call,e);
+//                    }
+//                }
+//                @Override
+//                public void onResponse(Call call, Response response) throws IOException {
+//                    LoadTimes = 0;
+//                    try{
+//                        String message = response.body().string();
+//                        listener.onResponse(call,message);
+//                    }catch (Exception  e){
+//                        e.printStackTrace();
+//                        listener.onFailure(call,e);
+//                    }
+//                }
+//            });
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//    }
+}

@@ -1,0 +1,149 @@
+package com.ist.rylibrary.base.service;
+
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.media.MediaPlayer;
+import android.os.IBinder;
+import android.os.SystemClock;
+import android.support.annotation.Nullable;
+import android.util.Log;
+
+import com.ist.asr.RRasr;
+import com.ist.asr.RRasrListener;
+import com.ist.asr.RRtts;
+import com.ist.asr.RRttsListener;
+import com.ist.rylibrary.base.controller.AiuiController;
+import com.ist.rylibrary.base.controller.MediaVoiceController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.event.AiuiMessageEvent;
+import com.ist.rylibrary.base.listener.BaseAiuiListener;
+import com.ist.rylibrary.base.listener.BaseRRasrListener;
+import com.ist.rylibrary.base.listener.BaseRRttsListener;
+import com.ist.rylibrary.base.util.ToolUtil;
+import com.ist.rylibrary.myfloatwindow.service.FloatWindowService;
+import com.renying.m4.AIUI2;
+import com.renying.m4.AIUIListener;
+import com.renying.m4.AiuiObj;
+import com.renying.m4.Xunfei;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * Created by minyuchun on 2017/2/22.
+ * 用于aiui的
+ */
+
+public class AiuiService extends Service{
+    private static Intent sIntent;
+    /**服务循环时间*/
+    private int serverTime = 10*60*1000;  //秒*1000
+    /**日志输出*/
+    private String TAG = "AiuiService";
+    /**aiui识别开启*/
+    public static final int AIUI_TYPE_OPEN = 1;
+    /**aiui识别关闭*/
+    public static final int AIUI_TYPE_CLOSE = -1;
+    /**aiui识别停止*/
+    public static final int AIUI_TYPE_STOP = -2;
+    /**aiui识别正常*/
+    public static final int AIUI_TYPE_DEFAULT = 0;
+
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    public static void  getInstance(Context context){
+        startService(context);
+    }
+
+    private static void startService(Context context){
+        sIntent = new Intent(context, AiuiService.class);
+        context.startService(sIntent);
+    }
+    /***
+     * 关闭服务
+     * @param context
+     */
+    public static void finishService(Context context){
+        if(sIntent!=null){
+            context.stopService(sIntent);
+            sIntent = null;
+        }
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        ToolUtil.getInstance().loadEventBus(this);
+        AiuiController.getInstance().initRRArs();
+        AiuiController.getInstance().initRRtts();
+        AiuiController.getInstance().AiuiWork();
+        AiuiController.getInstance().AiuiWakeUp();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        ToolUtil.getInstance().relieveEventBus(this);
+    }
+
+    /**aiui 监听需要长连接的*/
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMessageEvent(AiuiMessageEvent event) {
+        try{
+            if(event!=null){
+                boolean isCustom = event.isCustom();
+                if(!event.isCustom()){
+                    defaultHanding(event.getType(),event.getMessage());
+                }else{
+                    AiuiController.getInstance().recovery(event.getType(),event.isCustom(),event.getMessage());
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * 默认处理方式
+     * @param type  aiui类型
+     * @param message  aiui消息
+     */
+    private void defaultHanding(int type,String message){
+        switch (type){
+            case AIUI_TYPE_DEFAULT:
+                AiuiController.getInstance().startTTS(message);
+                break;
+            case AIUI_TYPE_CLOSE:
+                AiuiController.getInstance().stopTTS();
+                AiuiController.getInstance().AiuiSleep();
+                break;
+            case AIUI_TYPE_STOP:
+                AiuiController.getInstance().stopTTS();
+                break;
+            case AIUI_TYPE_OPEN:
+                AiuiController.getInstance().AiuiWakeUp();
+                break;
+        }
+    }
+
+}

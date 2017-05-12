@@ -1,0 +1,82 @@
+package com.ist.rylibrary.base.controller;
+
+import com.ist.rylibrary.base.event.InfraredMessageEvent;
+
+import org.greenrobot.eventbus.EventBus;
+
+/**
+ * Created by minyuchun on 2017/3/27.
+ */
+
+public class InfraredController {
+
+    private static InfraredController mInfraredController;
+
+    private InfraredListener mInfraredListener;
+
+    private String TAG = "ChassisController";
+
+    public static InfraredController getInstance(){
+        if(mInfraredController == null){
+            mInfraredController = new InfraredController();
+        }
+        return mInfraredController;
+    }
+
+    public InfraredController(){
+
+    }
+
+    /**
+     * 发送默认的地盘消息
+     * @param isPersonExist  消息内容
+     * @param frequency 频率积累
+     */
+    public void post(boolean isPersonExist,int frequency){
+        post(false,isPersonExist,frequency);
+    }
+    /***
+     * 发送地盘消息
+     * @param isCustom 是否自定义处理
+     * @param isPersonExist 是否有人
+     * @param frequency 频率积累
+     */
+    public void post(boolean isCustom,boolean isPersonExist,int frequency){
+        EventBus.getDefault().post(new InfraredMessageEvent(isCustom,isPersonExist,frequency));
+    }
+
+    /**
+     * 自定义消息回收处理
+     * @param isCustom  是否自定义
+     * @param isPersonExist  是否有人
+     * @param frequency     频率积累
+     */
+    public void recovery(boolean isCustom,boolean isPersonExist,int frequency){
+        if(mInfraredListener!=null){
+            mInfraredListener.InfraredMessage(isCustom,isPersonExist,frequency);
+        }
+    }
+
+    /**
+     * 设置地盘监听
+     * @param listener 新的监听
+     */
+    public void setInfraredListener(InfraredListener listener) {
+        this.mInfraredListener = listener;
+    }
+
+    /***
+     * 　底盘监听回调
+     */
+    public interface InfraredListener{
+        /**
+         *  红外消息回调
+         * @param isCustom 是否自定义
+         * @param isPersonExist 是否有人
+         * @param frequency  频率积累
+         */
+        void InfraredMessage(boolean isCustom,boolean isPersonExist,int frequency);
+    }
+
+
+}

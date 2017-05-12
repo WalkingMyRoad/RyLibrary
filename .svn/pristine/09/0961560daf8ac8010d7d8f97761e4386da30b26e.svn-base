@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--按钮被点击-->
+    <item android:state_pressed="true" >
+        <shape android:shape="rectangle">
+            <solid android:color="#e79429"></solid>
+            <corners android:radius="10dp"></corners>
+            <padding android:bottom="5dp" android:left="5dp" android:right="5dp" android:top="5dp"></padding>
+        </shape>
+    </item>
+    <!--按钮默认-->
+    <item android:top="1px" android:bottom="1px" android:left="1px" android:right="1px">
+        <shape>
+            <gradient
+                android:startColor="#ec6941" android:endColor="#FFFED69E"
+                android:type="linear" android:angle="90"
+                android:centerX="0.5" android:centerY="0.5" />
+            <corners android:radius="10dp"></corners>
+            <padding android:bottom="5dp" android:left="5dp" android:right="5dp" android:top="5dp"></padding>
+        </shape>
+    </item>
+</selector>

@@ -1,0 +1,148 @@
+package com.ist.rylibrary.base.application;
+
+import android.app.Application;
+import android.content.Context;
+import android.util.Log;
+
+import com.ist.rylibrary.base.controller.HttpController;
+import com.ist.rylibrary.base.controller.JiangJieController;
+import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.controller.SharedPreferencesController;
+import com.ist.rylibrary.base.entity.AllSceneResultBean;
+import com.ist.rylibrary.base.entity.MallDictsBean;
+import com.ist.rylibrary.base.exception.CatchGlobalException;
+import com.ist.rylibrary.base.util.BaseLogUtil;
+import com.ist.rylibrary.base.util.ToolUtil;
+import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.download.BaseImageDownloader;
+
+import java.util.List;
+
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+
+/**
+ * Created by minyuchun on 2017/3/16.
+ * 自定义的Application
+ */
+
+public class RyApplication extends Application{
+    /**全局上下文*/
+    private static Context context;
+    /**全局日志*/
+    private static BaseLogUtil log;
+    /**图片加载器*/
+    protected static ImageLoader imageLoader;
+    /**书记加载是否完毕*/
+    private boolean isDataLoading;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        try{
+            context = getApplicationContext();
+            log = new BaseLogUtil(context.getClass());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            CatchGlobalException.getInstance();
+            initSharedPreference();
+            initLoader();
+            HttpController.getInstance().getAllSceneAndBot(new Observer<AllSceneResultBean>() {
+                @Override
+                public void onSubscribe(Disposable d) {
+                    SceneController.getInstance().setCompleteData(false);
+                }
+
+                @Override
+                public void onNext(AllSceneResultBean value) {
+                    log.d("场景列表数据 "+value.toString());
+                    SceneController.getInstance().saveSceneData(value);
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    log.d("网络请求错误场景列表数据 "+e.getClass().getSimpleName());
+                    SceneController.getInstance().readSceneData();
+                }
+
+                @Override
+                public void onComplete() {
+
+                }
+            });
+            HttpController.getInstance().getMallDict(new Observer<List<MallDictsBean>>() {
+                @Override
+                public void onSubscribe(Disposable d) {
+
+                }
+
+                @Override
+                public void onNext(List<MallDictsBean> value) {
+                    log.d("字典表数据 "+value.toString());
+                    if(value.size()>0){
+                        JiangJieController.getInstance().initJiangJieData(value.get(0).getValue());
+                    }
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    log.d("字典表数据请求错误 "+e.getClass().getSimpleName());
+                }
+
+                @Override
+                public void onComplete() {
+
+                }
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 图片加载器初始化
+     */
+    private void initLoader(){
+        imageLoader = ImageLoader.getInstance();
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(
+                context)
+                .memoryCache(new WeakMemoryCache())
+                .threadPoolSize(3)
+                .threadPriority(Thread.NORM_PRIORITY - 2)
+                .discCacheSize(20 * 1024 * 1024)
+                .discCacheFileCount(1000)
+                .denyCacheImageMultipleSizesInMemory()
+                .discCacheFileNameGenerator(new Md5FileNameGenerator())
+                .tasksProcessingOrder(QueueProcessingType.LIFO)
+                .imageDownloader(new BaseImageDownloader(context, 5 * 1000, 30 * 1000))
+                .writeDebugLogs() // Remove // app
+                .build();
+        ImageLoader.getInstance().init(config);
+    }
+
+    public static ImageLoader getImageLoader() {
+        return imageLoader;
+    }
+
+    /**
+     * 读取配置文件数据并保存
+     */
+    private void initSharedPreference(){
+        //初始化本地数据实例
+        SharedPreferencesController.getInstance().initConfigSharedPreference();
+    }
+
+    public static Context getContext(){
+        return context;
+    }
+
+    public static BaseLogUtil getLog() {
+        return log;
+    }
+}

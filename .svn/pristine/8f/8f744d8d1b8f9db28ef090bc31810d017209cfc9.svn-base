@@ -1,0 +1,64 @@
+package com.ist.rylibrary.base.entity;
+
+/**
+ * Created by minyuchun on 2017/4/10.
+ */
+
+public class FinalQASemanticSlotsObjBean {
+    private String que;
+    private String item;
+    private String type;
+    private String act;
+
+    public FinalQASemanticSlotsObjBean() {
+    }
+
+    public FinalQASemanticSlotsObjBean(String que, String item, String type, String act) {
+        this.que = que;
+        this.item = item;
+        this.type = type;
+        this.act = act;
+    }
+
+    public String getQue() {
+        return que;
+    }
+
+    public void setQue(String que) {
+        this.que = que;
+    }
+
+    public String getItem() {
+        return item;
+    }
+
+    public void setItem(String item) {
+        this.item = item;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getAct() {
+        return act;
+    }
+
+    public void setAct(String act) {
+        this.act = act;
+    }
+
+    @Override
+    public String toString() {
+        return "FinalQASemanticSlotsObjBean{" +
+                "que='" + que + '\'' +
+                ", item='" + item + '\'' +
+                ", type='" + type + '\'' +
+                ", act='" + act + '\'' +
+                '}';
+    }
+}

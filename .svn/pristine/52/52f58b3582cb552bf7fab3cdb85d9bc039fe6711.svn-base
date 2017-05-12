@@ -1,0 +1,180 @@
+package com.ist.rylibrary.base.controller;
+
+import com.ist.rylibrary.base.entity.AllSceneResultBean;
+import com.ist.rylibrary.base.entity.DefaultResultBean;
+import com.ist.rylibrary.base.entity.MallDictsBean;
+import com.ist.rylibrary.base.function.HttpAllSceneAndBotFunction;
+import com.ist.rylibrary.base.function.HttpDefaultFunction;
+import com.ist.rylibrary.base.function.HttpMallDictsFunction;
+import com.ist.rylibrary.base.inter.BaseHttpServiceInter;
+import com.ist.rylibrary.base.util.HttpUtil;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import okhttp3.Call;
+
+/**
+ * Created by minyuchun on 2017/3/25.
+ */
+
+public class HttpController {
+    /**http控制实例*/
+    public static HttpController mHttpController;
+    /**http连接*/
+    public HttpUtil mHttpUtil;
+
+    public static final String InterfaceName_allSceneAndBot = "rrs/getAllSceneAndBot";
+    public static final String InterfaceName_MALLDICT = "rrs/getMallDict";
+    public static final String InterfaceName_addAIDiscernLog = "rrs/addAIDiscern";
+    public static final String InterfaceName_addVoiceLog = "rrs/addVoiceLog";
+
+    public static HttpController getInstance(){
+        if(mHttpController == null){
+            mHttpController = new HttpController();
+        }
+        return mHttpController;
+    }
+
+    protected HttpController(){
+        mHttpUtil = new HttpUtil();
+    }
+    /***
+     * 场景对话接口
+     */
+    public void getAllSceneAndBot(Observer<AllSceneResultBean> observer){
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.getAllSceneAndBot()
+                    .map(new HttpAllSceneAndBotFunction())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
+        }
+    }
+    /**
+     * 获取讲解流程的字典表
+     */
+    public void getMallDict(Observer<List<MallDictsBean>> observer){
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.getMallDicts(SharedPreferencesController.getInstance().getProgramCode())
+                    .map(new HttpMallDictsFunction<List<MallDictsBean>>())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(observer);
+        }
+    }
+
+    /***
+     *  写语音识别日志请求接口
+     * @param sceneId  场景id
+     * @param pageId  页面id
+     * @param question  问
+     * @param answer 答
+     * @param voiceFile  语音文件
+     * @param matchQaId  匹配的问答id
+     * @param matchQuestion  匹配的问题
+     * @param matchAnswer 匹配的答案
+     * @param actionType 执行的类型
+     * @param actionCode  执行的编码
+     */
+    public void addAIDiscernLog(String sceneId, String pageId, String question, String answer, String voiceFile,
+                                String matchQaId, String matchQuestion, String matchAnswer, String actionType, String actionCode) {
+        Map<String,String> map = new HashMap<>();
+        map.put("sceneId",sceneId);
+        map.put("pageId",pageId);
+        map.put("question",question);
+        map.put("answer",answer);
+        map.put("voiceFile",voiceFile);
+        map.put("matchQaId",matchQaId);
+        map.put("matchQuestion",matchQuestion);
+        map.put("matchAnswer",matchAnswer);
+        map.put("actionType",actionType);
+        map.put("actionCode",actionCode);
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.addAIDiscernLog(map)
+                    .map(new HttpDefaultFunction())
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<DefaultResultBean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+
+                        }
+
+                        @Override
+                        public void onNext(DefaultResultBean value) {
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+        }
+    }
+
+    /***
+     * 添加语音文件到服务器
+     * @param readResult  读取结果
+     * @param iflySemantic
+     * @param wewinsSementic
+     * @param actionCode
+     * @param playContent
+     */
+    public void addVoiceLog(String readResult,String iflySemantic, String wewinsSementic,String actionCode,String playContent){
+        Map<String,String> map = new HashMap<>();
+        map.put("iflySemantic",iflySemantic);
+        map.put("wewinsSementic",wewinsSementic);
+        map.put("actionCode",actionCode);
+        map.put("playContent",playContent);
+        map.put("readResult",readResult);
+        BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
+        if(serviceInter!=null){
+            serviceInter.addVoiceLog(map)
+                    .map(new HttpDefaultFunction())
+                    .subscribeOn(Schedulers.io())
+                    .unsubscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<DefaultResultBean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+
+                        }
+
+                        @Override
+                        public void onNext(DefaultResultBean value) {
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+        }
+    }
+}

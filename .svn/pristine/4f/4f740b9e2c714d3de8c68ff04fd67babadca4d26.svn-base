@@ -1,0 +1,181 @@
+package com.ist.rylibrary.base.controller;
+
+import android.os.Environment;
+import android.util.Log;
+import android.util.Xml;
+
+import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.util.ToolUtil;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by minyuchun on 2017/3/16.
+ * 基础的本地数据控制器
+ */
+public class LocalDataController {
+    /**存储数据的基础路径*/
+    private String BASE_PATH_LOCAL_DATA;
+    /**配置文件的路径*/
+    private String CONFIG_XML = File.separator+"config.xml";
+    /**默认服务器文件写入路径*/
+    private String SERVER_DATA_TXT = File.separator + "data";
+    private String GIT_IMAGE_VIEW = File.separator + "gif";
+    private String FILE_NAME_SCENE_QAS = File.separator + "sceneQas.txt";
+    private String FILE_NAME_ROBOTS = File.separator + "robots.txt";
+    private String FILE_NAME_SCENES = File.separator + "scenes.txt";
+    private String FILE_NAME_PAGES = File.separator +"pages.txt";
+    private String FILE_NAME_CUSTOM_SCENES = File.separator + "customScenes.txt";
+    /**底盘的坐标信息**/
+    private String FILE_NAME_POSITION= File.separator + "positionData.txt";
+    /**本地数据控制器实例*/
+    private static LocalDataController sLocalDataController;
+    /**构造函数*/
+    public LocalDataController(){
+        try{
+            String packageName = ToolUtil.getInstance().getAppPackageName();
+            Log.i("packageName "," packageName = "+packageName);
+//            packageName = packageName.replace(".","/");
+            BASE_PATH_LOCAL_DATA = Environment.getExternalStorageDirectory() + File.separator + packageName;
+            Log.i("LocalDataController","获取到的包名 "+BASE_PATH_LOCAL_DATA);
+            File file = new File(BASE_PATH_LOCAL_DATA);
+            if(!file.exists()){
+                file.mkdirs();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**
+     * 获取本地数据控制实例
+     * @return
+     */
+    public static LocalDataController getInstance(){
+        if(sLocalDataController == null){
+            sLocalDataController = new LocalDataController();
+        }
+        return sLocalDataController;
+    }
+
+    public String getCONFIG_XML() {
+        return CONFIG_XML;
+    }
+
+    public void setCONFIG_XML(String CONFIG_XML) {
+        this.CONFIG_XML = CONFIG_XML;
+    }
+
+
+    public Map<String,String> readConfigXML(String filePath){
+        Map<String,String> map = null;
+        try {
+            Log.i("ToolUtil ","文件路径 "+filePath);
+            if(filePath.endsWith(".xml")){
+                File file = new File(filePath);
+                if(file.exists()){
+                    map = new HashMap<String,String>();
+                    FileInputStream inputStream = new FileInputStream(file);
+                    // 获得pull解析器对象
+                    XmlPullParser parser = Xml.newPullParser();
+                    // 指定解析的文件和编码格式
+                    parser.setInput(inputStream, "utf-8");
+                    int eventType = parser.getEventType();
+                    while (eventType!=XmlPullParser.END_DOCUMENT){
+                        String tagName = parser.getName(); // 获得当前节点的名称
+                        switch (eventType){
+                            case XmlPullParser.START_TAG:  //若节点名称为开始节点
+                                if(tagName.equals("config")){
+                                }else if(tagName.equals("address")){
+                                    map.put(tagName,parser.nextText());
+                                }else if (tagName.equals("mall_id")){
+                                    map.put(tagName,parser.nextText());
+                                }else if (tagName.equals("mall_number")){
+                                    map.put(tagName,parser.nextText());
+                                }else if (tagName.equals("robot_number")){
+                                    map.put(tagName,parser.nextText());
+                                }else if (tagName.equals("isFormal")){
+                                    map.put(tagName,parser.nextText());
+                                }else{
+                                    map.put(tagName,parser.nextText());
+                                }
+                                break;
+                            case XmlPullParser.END_TAG:  //若节点名称为结束节点
+                                break;
+                            default:
+                                break;
+                        }
+                        eventType = parser.next();
+                    }
+                }
+            }
+            return map;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (XmlPullParserException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return null;
+    }
+
+
+    public String getSERVER_DATA_TXT() {
+        return BASE_PATH_LOCAL_DATA+SERVER_DATA_TXT;
+    }
+
+    public String getGIT_IMAGE_VIEW() {
+        try{
+            String path = BASE_PATH_LOCAL_DATA+GIT_IMAGE_VIEW;
+            File file = new File(path);
+            if(!file.exists()){
+                file.mkdirs();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return BASE_PATH_LOCAL_DATA+GIT_IMAGE_VIEW;
+    }
+
+    /**
+     * 获取基础的sd卡配置路径
+     * @return
+     */
+    public String getBASE_PATH_LOCAL_DATA() {
+        return BASE_PATH_LOCAL_DATA;
+    }
+
+    public String getFILE_NAME_SCENE_QAS() {
+        return FILE_NAME_SCENE_QAS;
+    }
+
+    public String getFILE_NAME_ROBOTS() {
+        return FILE_NAME_ROBOTS;
+    }
+
+    public String getFILE_NAME_SCENES() {
+        return FILE_NAME_SCENES;
+    }
+
+    public String getFILE_NAME_PAGES() {
+        return FILE_NAME_PAGES;
+    }
+
+    public String getFILE_NAME_CUSTOM_SCENES() {
+        return FILE_NAME_CUSTOM_SCENES;
+    }
+
+    public String getFILE_NAME_POSITION() {
+        return FILE_NAME_POSITION;
+    }
+}

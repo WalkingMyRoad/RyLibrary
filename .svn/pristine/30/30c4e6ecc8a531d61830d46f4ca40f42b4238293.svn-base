@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/intermediates/res/merged/androidTest/debug/layout-v11/notification_media_action.xml",
+        "source": "/Users/minyuchun/.android/build-cache/dad63e8908776acabbf3149a6c863cfc55035061/output/res/layout-v11/notification_media_action.xml"
+    },
+    {
+        "merged": "/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/intermediates/res/merged/androidTest/debug/layout-v11/notification_template_big_media_narrow_custom.xml",
+        "source": "/Users/minyuchun/.android/build-cache/dad63e8908776acabbf3149a6c863cfc55035061/output/res/layout-v11/notification_template_big_media_narrow_custom.xml"
+    },
+    {
+        "merged": "/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/intermediates/res/merged/androidTest/debug/layout-v11/notification_media_cancel_action.xml",
+        "source": "/Users/minyuchun/.android/build-cache/dad63e8908776acabbf3149a6c863cfc55035061/output/res/layout-v11/notification_media_cancel_action.xml"
+    },
+    {
+        "merged": "/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/intermediates/res/merged/androidTest/debug/layout-v11/notification_template_big_media_custom.xml",
+        "source": "/Users/minyuchun/.android/build-cache/dad63e8908776acabbf3149a6c863cfc55035061/output/res/layout-v11/notification_template_big_media_custom.xml"
+    },
+    {
+        "merged": "/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/intermediates/res/merged/androidTest/debug/layout-v11/notification_template_big_media_narrow.xml",
+        "source": "/Users/minyuchun/.android/build-cache/dad63e8908776acabbf3149a6c863cfc55035061/output/res/layout-v11/notification_template_big_media_narrow.xml"
+    },
+    {
+        "merged": "/Users/minyuchun/androidwork/projectstudio/WeishanLake/rylibrary/build/intermediates/res/merged/androidTest/debug/layout-v11/notification_template_big_media.xml",
+        "source": "/Users/minyuchun/.android/build-cache/dad63e8908776acabbf3149a6c863cfc55035061/output/res/layout-v11/notification_template_big_media.xml"
+    }
+]

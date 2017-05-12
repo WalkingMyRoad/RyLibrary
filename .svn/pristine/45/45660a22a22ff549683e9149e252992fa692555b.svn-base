@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+    <!--android:layout_width="1150dp"-->
+    <!--android:layout_height="105dp"-->
+    <!--android:layout_marginRight="50dp"-->
+    <!--android:id="@+id/small_window_layout">-->
+    <!--<Button-->
+        <!--android:id="@+id/open_float"-->
+        <!--android:layout_width="105dp"-->
+        <!--android:layout_height="105dp"-->
+        <!--android:gravity="center"-->
+        <!--android:background="@drawable/float_small_voice_open"-->
+        <!--android:layout_gravity="center|right" />-->
+<!--</FrameLayout>-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="105dp"
+             android:layout_height="105dp"
+             android:id="@+id/small_window_layout">
+    <Button
+        android:id="@+id/open_float"
+        android:layout_width="105dp"
+        android:layout_height="105dp"
+        android:gravity="center"
+        android:background="@drawable/float_small_voice_open"
+        android:layout_gravity="center|right" />
+</FrameLayout>
