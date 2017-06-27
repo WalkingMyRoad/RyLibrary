@@ -1,20 +1,24 @@
 package com.ist.rylibrary.base.listener;
 
-import com.ist.asr.RRtts;
-import com.ist.asr.RRttsListener;
 import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.controller.ActivityController;
 import com.ist.rylibrary.base.controller.AiuiController;
 import com.ist.rylibrary.base.controller.JiangJieController;
 import com.ist.rylibrary.base.controller.SceneController;
 import com.ist.rylibrary.base.controller.YinDaoController;
 import com.ist.rylibrary.base.service.InfraredService;
 import com.ist.rylibrary.myfloatwindow.controller.FloatWindowController;
+import com.renying.m4.RRtts;
+import com.renying.m4.RRttsListener;
 
 /**
  * Created by minyuchun on 2017/3/25.
  */
 
 public class BaseRRttsListener implements RRttsListener {
+
+    public static boolean isInSpeak = false;
+
     private RRtts mRRtts;
     public BaseRRttsListener(RRtts rRtts){
         this.mRRtts = rRtts;
@@ -26,7 +30,8 @@ public class BaseRRttsListener implements RRttsListener {
 
     @Override
     public void onSpeakBegin() {
-
+        isInSpeak = true;
+        BaseAiuiListener.isDealWebSocketVoice = false;
     }
 
     @Override
@@ -52,8 +57,19 @@ public class BaseRRttsListener implements RRttsListener {
     public void onCompleted(String s) {
         try{
             //结束放音
+            isInSpeak = false;
             RyApplication.getLog().d("是否是语音 结束 s = " +s);
-            AiuiController.getInstance().RRttsComplete(s);
+            if(!JiangJieController.getInstance().isInJiangJieProcess()){
+                AiuiController.getInstance().RRttsComplete(s);
+                BaseAiuiListener.isDealVoice = true;
+                if(BaseAiuiListener.isOpenResultRawToWebSocket){
+                    String name = ActivityController.getInstance().getTopActivity().getClass().getSimpleName();
+                    if(name.contains("WebSocktTxtActivity")){
+                        ActivityController.getInstance().finishTopActivity();
+                    }
+                }
+                BaseAiuiListener.isDealWebSocketVoice = true;
+            }
             FloatWindowController.getInstance().post(null,null);
             if(s == null) {
                 SceneController.getInstance().dealActionList(true, SceneController.getInstance().getBaseActionBeanList());

@@ -1,5 +1,7 @@
 package com.ist.rylibrary.base.controller;
 
+import android.util.Log;
+
 import com.ist.asr.RRYuyiResult;
 import com.ist.rylibrary.base.application.RyApplication;
 import com.ist.rylibrary.base.entity.AllInfoByRobotIdBean;
@@ -67,6 +69,7 @@ public class HttpController {
         if(robotNo == null || robotNo.isEmpty()){
             robotNo = ToolUtil.getInstance().getDeviceId();
         }
+        Log.i("机器人编号：","robotNo=="+robotNo);
         BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
         if(serviceInter!=null){
             serviceInter.getAllInfoByRobotId(robotNo)
@@ -81,9 +84,15 @@ public class HttpController {
      * 场景对话接口
      */
     public void getAllSceneAndBot(Observer<AllSceneResultBean> observer){
+        getAllSceneAndBot(observer,false);
+    }
+    /***
+     * 场景对话接口
+     */
+    public void getAllSceneAndBot(Observer<AllSceneResultBean> observer,boolean isGetNewData){
         BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
         if(serviceInter!=null){
-            serviceInter.getAllSceneAndBot()
+            serviceInter.getAllSceneAndBot(isGetNewData)
                     .map(new HttpAllSceneAndBotFunction())
                     .subscribeOn(Schedulers.io())
                     .unsubscribeOn(Schedulers.io())
@@ -97,7 +106,8 @@ public class HttpController {
     public void getMallDict(Observer<List<MallDictsBean>> observer){
         BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();
         if(serviceInter!=null){
-            serviceInter.getMallDicts(SharedPreferencesController.getInstance().getProgramCode())
+            serviceInter.getMallDicts(SharedPreferencesController.getInstance().getMailId()
+                    ,SharedPreferencesController.getInstance().getRobotNumber(),"zt")
                     .map(new HttpMallDictsFunction<List<MallDictsBean>>())
                     .subscribeOn(Schedulers.io())
                     .unsubscribeOn(Schedulers.io())
@@ -133,6 +143,7 @@ public class HttpController {
         map.put("actionType",actionType);
         map.put("actionCode",actionCode);
         map.put("iflySemantic",iflySemantic);
+        map.put("realRobotNo",ToolUtil.getInstance().getDeviceId());
         map.put("mallId",SharedPreferencesController.getInstance().getMailId());//默认的接口参数
         map.put("robotNo",SharedPreferencesController.getInstance().getRobotNumber());//默认的接口参数
         BaseHttpServiceInter serviceInter = mHttpUtil.getMyBaseService();

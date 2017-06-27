@@ -15,11 +15,14 @@ import java.util.List;
 public class AllSceneResultBean {
     private String retcode;
     private String retinfo;
+    private List<TipsBean> tipsData;
     private List<SceneQABean> sceneQas;
     private List<SceneBean> scenes;
     private List<PageBean> pages;
     private List<CustomSceneBean> customScenes;
     private Robotsbean robots;
+    private AnswerRule answerRule;
+    private List<SceneQABean> sceneQasNew;
 //    private JSONArray sceneQas;
 //    private JSONArray scenes;
 //    private JSONArray pages;
@@ -27,14 +30,20 @@ public class AllSceneResultBean {
 //    private JSONObject robots;
 
 
-    public AllSceneResultBean(String retcode, String retinfo, List<SceneQABean> sceneQas, List<SceneBean> scenes, List<PageBean> pages, List<CustomSceneBean> customScenes, Robotsbean robots) {
+    public AllSceneResultBean() {
+    }
+
+    public AllSceneResultBean(String retcode, String retinfo, List<TipsBean> tipsData, List<SceneQABean> sceneQas, List<SceneBean> scenes, List<PageBean> pages, List<CustomSceneBean> customScenes, Robotsbean robots, AnswerRule answerRule, List<SceneQABean> sceneQasNew) {
         this.retcode = retcode;
         this.retinfo = retinfo;
+        this.tipsData = tipsData;
         this.sceneQas = sceneQas;
         this.scenes = scenes;
         this.pages = pages;
         this.customScenes = customScenes;
         this.robots = robots;
+        this.answerRule = answerRule;
+        this.sceneQasNew = sceneQasNew;
     }
 
     public String getRetcode() {
@@ -54,7 +63,13 @@ public class AllSceneResultBean {
     }
 
     public List<SceneQABean> getSceneQas() {
-        return sceneQas;
+        if(sceneQas!=null){
+            return sceneQas;
+        }else if(sceneQasNew!=null){
+            return sceneQasNew;
+        }else{
+            return null;
+        }
     }
 
     public void setSceneQas(List<SceneQABean> sceneQas) {
@@ -93,19 +108,45 @@ public class AllSceneResultBean {
         this.robots = robots;
     }
 
+    public AnswerRule getAnswerRule() {
+        return answerRule;
+    }
+
+    public void setAnswerRule(AnswerRule answerRule) {
+        this.answerRule = answerRule;
+    }
+
+    public List<SceneQABean> getSceneQasNew() {
+        return sceneQasNew;
+    }
+
+    public void setSceneQasNew(List<SceneQABean> sceneQasNew) {
+        this.sceneQasNew = sceneQasNew;
+    }
+
+    public List<TipsBean> getTipsData() {
+        return tipsData;
+    }
+
+    public void setTipsData(List<TipsBean> tipsData) {
+        this.tipsData = tipsData;
+    }
+
     @Override
     public String toString() {
         return "AllSceneResultBean{" +
                 "retcode='" + retcode + '\'' +
                 ", retinfo='" + retinfo + '\'' +
+                ", tipsData=" + tipsData +
                 ", sceneQas=" + sceneQas +
                 ", scenes=" + scenes +
                 ", pages=" + pages +
                 ", customScenes=" + customScenes +
                 ", robots=" + robots +
+                ", answerRule=" + answerRule +
+                ", sceneQasNew=" + sceneQasNew +
                 '}';
     }
-
 
     public JSONArray getJaSceneQas() throws JSONException {
         return new JSONArray(new Gson().toJson(getSceneQas()));

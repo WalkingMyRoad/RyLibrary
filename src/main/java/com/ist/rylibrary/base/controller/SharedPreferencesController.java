@@ -122,8 +122,8 @@ public class SharedPreferencesController{
             if(strings!=null){
                 RyApplication.getLog().d("存储是否成功以及存储的标签 "+strings.toString());
                 if(mInitSharedPreferenceListener!=null){
-                    if(strings.contains("mall_id") || strings.contains("robot_number")
-                            || strings.contains("mall_number") || strings.contains("program_code")){
+                    if(strings.contains("mall_id") && strings.contains("robot_number")
+                            && strings.contains("mall_number")){
                         mInitSharedPreferenceListener.initData(ShareByDemo,true);
                     }else{
                         mInitSharedPreferenceListener.initData(ShareByConfig,true);
@@ -163,6 +163,10 @@ public class SharedPreferencesController{
     }
     public String getAddress(){
         return getData("address");
+    }
+
+    public String getFacesetToken(){
+        return getData("faceset_token");
     }
 
     public String isFormal(){

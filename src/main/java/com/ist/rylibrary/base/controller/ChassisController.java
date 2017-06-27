@@ -10,6 +10,7 @@ import com.ist.rylibrary.base.event.ChassisMessageEvent;
 import com.ist.rylibrary.base.util.BaseLogUtil;
 import com.ist.rylibrary.base.util.TimeUtil;
 import com.ist.rylibrary.base.util.ToolUtil;
+import com.renying.m4.AiuiObj;
 import com.wewins.robot.Dipan;
 import com.wewins.robot.DipanGs;
 import com.wewins.robot.Human;
@@ -49,7 +50,7 @@ public class ChassisController {
     /**用户底盘walk方法的运用记录*/
     private String walks = null;
     /**用户记录当前点位信息*/
-    private String nowWhere;
+    public static String nowWhere = null;
 
     public static ChassisController getInstance(){
         if(mChassisController == null){
@@ -60,6 +61,7 @@ public class ChassisController {
 
     public ChassisController(){
         human = new Human();
+        nowWhere = null;
         log = new BaseLogUtil(this.getClass());
     }
 
@@ -129,6 +131,34 @@ public class ChassisController {
         }
     }
 
+    /***
+     * 初始化时设置以太网状态
+     */
+    public void setEther(final Context context){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                log.d("重启底盘啦设置网络 "+System.currentTimeMillis());
+                AiuiObj.setSystemProperties("persist.service.ist.startEther", "0");//关闭
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                AiuiObj.setSystemProperties("persist.service.ist.startEther", "1");//打开
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                log.d("初始化底盘 "+System.currentTimeMillis());
+//                connect(context);
+            }
+        }).start();
+    }
+
     public void connect(final Context context){
         human.init(new HumanListener() {
             @Override
@@ -194,6 +224,12 @@ public class ChassisController {
             }
 
             @Override
+            public void onChargeResult(Boolean aBoolean, int i) {
+                Log.i(TAG,"充电桩！ ");
+            }
+
+
+            @Override
             public void onLocation(int x, int y, int jd, int xSpeed, int rotSpeed, int stat) {
 //                Log.i(TAG,"onLocation numberResult == "+numberResult + "where == "+where);
             }
@@ -201,20 +237,26 @@ public class ChassisController {
             @Override
             public void onError(int type, String info) {
                 Log.i(TAG,"onError type == "+type + "info == "+info);
-                if(type == Dipan.E_BTNSTOP){
-                    if(YinDaoController.getInstance().isInYindaoProcess()){
-                        YinDaoController.getInstance().YindaoEnd();
-                        AiuiController.getInstance().post("不好意思，暂时无法移动");
+                if(type == Dipan.E_INITOK){//初始化成功
+                    nowWhere = null;
+                }else if(type == Dipan.E_ONCONNET){//还在继续规划
+
+                }else{
+                    if(type == Dipan.E_BTNSTOP){
+                        if(YinDaoController.getInstance().isInYindaoProcess()){
+                            YinDaoController.getInstance().YindaoEnd();
+                            AiuiController.getInstance().post("不好意思，暂时无法移动");
+                        }
                     }
-                }
-                if (JiangJieController.getInstance().getJiangjieChassisListener()!=null){
-                    if(JiangJieController.getInstance().getJiangjieChassisListener().onError()){
-                        JiangJieController.getInstance().setJiangjieChassisListener(null);
+                    if (JiangJieController.getInstance().getJiangjieChassisListener()!=null){
+                        if(JiangJieController.getInstance().getJiangjieChassisListener().onError()){
+                            JiangJieController.getInstance().setJiangjieChassisListener(null);
+                        }
                     }
-                }
-                if(YinDaoController.getInstance().getYinDaoChassisListener()!=null){
-                    if(YinDaoController.getInstance().getYinDaoChassisListener().onError()){
-                        YinDaoController.getInstance().setYinDaoChassisListener(null);
+                    if(YinDaoController.getInstance().getYinDaoChassisListener()!=null){
+                        if(YinDaoController.getInstance().getYinDaoChassisListener().onError()){
+                            YinDaoController.getInstance().setYinDaoChassisListener(null);
+                        }
                     }
                 }
             }
@@ -284,7 +326,6 @@ public class ChassisController {
             WifiInfo wifiInfo = wifiManager.getConnectionInfo();
             int ipAddress = wifiInfo.getIpAddress();
             if(ipAddress==0){
-
                 try {
                     String ipAddress1=null;
                     for (Enumeration<NetworkInterface> en = NetworkInterface

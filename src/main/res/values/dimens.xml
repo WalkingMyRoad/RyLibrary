@@ -22,5 +22,7 @@
     <dimen name="txt_size_33">33sp</dimen>
     <dimen name="txt_size_34">34sp</dimen>
     <dimen name="txt_size_38">38sp</dimen>
+    <dimen name="txt_size_52">52sp</dimen>
     <dimen name="txt_size_72">72sp</dimen>
+
 </resources>

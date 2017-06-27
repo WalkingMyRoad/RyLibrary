@@ -9,7 +9,7 @@ public class BaseActionBean {
     /***
      * 动作之前要说的话，第一步执行
      */
-    private String talkBeforeAction;
+//    private String talkBeforeAction;
     /***
      * 是否在语音结束后才执行动作
      */
@@ -23,13 +23,13 @@ public class BaseActionBean {
      */
     private String talkErrorAction;
 
-    public String getTalkBeforeAction() {
-        return talkBeforeAction;
-    }
-
-    public void setTalkBeforeAction(String talkBeforeAction) {
-        this.talkBeforeAction = talkBeforeAction;
-    }
+//    public String getTalkBeforeAction() {
+//        return talkBeforeAction;
+//    }
+//
+//    public void setTalkBeforeAction(String talkBeforeAction) {
+//        this.talkBeforeAction = talkBeforeAction;
+//    }
 
     public boolean isActionAfterTalk() {
         return isActionAfterTalk;
@@ -58,7 +58,7 @@ public class BaseActionBean {
     @Override
     public String toString() {
         return "BaseActionBean{" +
-                "talkBeforeAction='" + talkBeforeAction + '\'' +
+//                "talkBeforeAction='" + talkBeforeAction + '\'' +
                 ", isActionAfterTalk=" + isActionAfterTalk +
                 ", action='" + action + '\'' +
                 ", talkErrorAction='" + talkErrorAction + '\'' +

@@ -1,10 +1,16 @@
 package com.ist.rylibrary.base.entity;
 
+import java.util.List;
+
 /**
  * Created by minyuchun on 2017/3/23.
  */
 
 public class SceneQABean {
+    private String id;//sceneQasNew
+    private List<SceneQasNewAnswerListBean> answerList;//sceneQasNew
+    private boolean isNewRecord;//通用
+
     private String actionCode;
     private String answerFile;
     private String sceneQaId;
@@ -18,7 +24,10 @@ public class SceneQABean {
     public SceneQABean() {
     }
 
-    public SceneQABean(String actionCode, String answerFile, String sceneQaId, String sceneId, String priority, String topicId, String answer, String questions, int actionType) {
+    public SceneQABean(String id, List<SceneQasNewAnswerListBean> answerList, boolean isNewRecord, String actionCode, String answerFile, String sceneQaId, String sceneId, String priority, String topicId, String answer, String questions, int actionType) {
+        this.id = id;
+        this.answerList = answerList;
+        this.isNewRecord = isNewRecord;
         this.actionCode = actionCode;
         this.answerFile = answerFile;
         this.sceneQaId = sceneQaId;
@@ -102,18 +111,45 @@ public class SceneQABean {
         this.topicId = topicId;
     }
 
+    public boolean isNewRecord() {
+        return isNewRecord;
+    }
+
+    public void setNewRecord(boolean newRecord) {
+        isNewRecord = newRecord;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public List<SceneQasNewAnswerListBean> getAnswerList() {
+        return answerList;
+    }
+
+    public void setAnswerList(List<SceneQasNewAnswerListBean> answerList) {
+        this.answerList = answerList;
+    }
+
     @Override
     public String toString() {
         return "SceneQABean{" +
-                "sceneQaId='" + sceneQaId + '\'' +
-                ", sceneId='" + sceneId + '\'' +
-                ", questions='" + questions + '\'' +
-                ", answer='" + answer + '\'' +
-                ", answerFile='" + answerFile + '\'' +
-                ", actionType=" + actionType +
+                "id='" + id + '\'' +
+                ", answerList=" + answerList +
+                ", isNewRecord=" + isNewRecord +
                 ", actionCode='" + actionCode + '\'' +
-                ", priority=" + priority +
+                ", answerFile='" + answerFile + '\'' +
+                ", sceneQaId='" + sceneQaId + '\'' +
+                ", sceneId='" + sceneId + '\'' +
+                ", priority='" + priority + '\'' +
                 ", topicId='" + topicId + '\'' +
+                ", answer='" + answer + '\'' +
+                ", questions='" + questions + '\'' +
+                ", actionType=" + actionType +
                 '}';
     }
 }

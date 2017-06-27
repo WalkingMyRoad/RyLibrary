@@ -138,13 +138,13 @@ public class NetWorkServer extends Service{
 					NetWorkController.getInstance().post(type,isCustom,false,false);
 					isNetWork = false;
 				}else{
-					if(NetWorkController.getInstance().ping()){
-						isNetWork = true;
-						NetWorkController.getInstance().post(type,isCustom,true,true);
-					}else{
-						NetWorkController.getInstance().post(type,isCustom,true,false);
-						isNetWork = false;
-					}
+//					if(NetWorkController.getInstance().ping()){
+//						isNetWork = true;
+//						NetWorkController.getInstance().post(type,isCustom,true,true);
+//					}else{
+//						NetWorkController.getInstance().post(type,isCustom,true,false);
+//						isNetWork = false;
+//					}
 				}
             }
         }

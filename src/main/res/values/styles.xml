@@ -88,5 +88,9 @@
         <item name="android:windowBackground">@null</item>
         <item name="android:backgroundDimEnabled">false</item>
     </style>
-
+    <style name="thems" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
 </resources>

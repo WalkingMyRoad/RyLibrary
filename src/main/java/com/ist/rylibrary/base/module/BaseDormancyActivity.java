@@ -1,6 +1,7 @@
 package com.ist.rylibrary.base.module;
 
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
@@ -25,9 +26,13 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.GifImageView;
 
 /**
  * Created by minyuchun on 2017/3/21.
@@ -36,6 +41,8 @@ import java.util.Random;
 public class BaseDormancyActivity extends BaseActivity{
     /**休眠页面展示图片*/
     protected ImageView imgDormancy;
+    /**休眠页面的gif*/
+    protected GifImageView mGifImageView;
     /**存储图片地址*/
     private String DORMANCY_IMAGE = File.separator+"dormancy";
 
@@ -73,9 +80,26 @@ public class BaseDormancyActivity extends BaseActivity{
         super.onDestroy();
         TimeUtil.getInstance().stopTimer();
     }
+
+    public void setGifDormancy(String filepath){
+        log.d("加载gif图片 路径为 = "+filepath);
+        mGifImageView.setVisibility(View.VISIBLE);
+        try {
+            GifDrawable gifDrawable = new GifDrawable(filepath);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                mGifImageView.setBackground(gifDrawable);
+            }else{
+                mGifImageView.setBackgroundDrawable(gifDrawable);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**设置图片*/
     public void setImgDormancy(final String filepath){
         try{
+            imgDormancy.setVisibility(View.VISIBLE);
             String standPath = "file://"+filepath;
             RyApplication.getImageLoader().displayImage(standPath, imgDormancy, options, new ImageLoadingListener() {
                 @Override
@@ -105,6 +129,18 @@ public class BaseDormancyActivity extends BaseActivity{
             e.printStackTrace();
         }
     }
+
+    /**获取gif图片路径*/
+    private String getGifFile(String filePath){
+        String gif = null;
+        List<String> fileList = ToolUtil.getInstance().getFiles(filePath);
+        for (String name:fileList){
+            if(name.endsWith(".gif")){
+                gif = name;
+            }
+        }
+        return gif;
+    }
     /**获取图片路径*/
     private List<String> getImageFile(String filePath){
         List<String> imgList = new ArrayList<>();
@@ -131,6 +167,7 @@ public class BaseDormancyActivity extends BaseActivity{
     public void initController() {
         imgDormancy = (ImageView) findViewById(R.id.dormancy_base);
         imgDormancy.setOnClickListener(this);
+        mGifImageView = (GifImageView) findViewById(R.id.dormancy_base_gif);
     }
 
     @Override
@@ -146,9 +183,13 @@ public class BaseDormancyActivity extends BaseActivity{
             if(!file.exists()){
                 file.mkdirs();
             }
+            final String fileGif = getGifFile(file.getPath());
             final List<String> fileImg = getImageFile(file.getPath());
-            RyApplication.getLog().d("休眠图片的数目 "+fileImg);
-            if (fileImg!=null && fileImg.size()>0){
+            if(fileGif!=null && fileGif.length()>0){
+                log.d("gif文件 = "+fileGif);
+                setGifDormancy(file.getPath() + File.separator + fileGif);
+            }else if (fileImg!=null && fileImg.size()>0){
+                log.d("休眠图片的数目 "+fileImg);
                 setImgDormancy(file.getPath() + File.separator + fileImg.get(0));
                 if(fileImg.size() >1){
                     TimeUtil.getInstance().startTimer(new TimeUtil.TimerListener() {
@@ -157,7 +198,7 @@ public class BaseDormancyActivity extends BaseActivity{
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    RyApplication.getLog().d("设置休眠页面的图片 ");
+                                    log.d("设置休眠页面的图片 ");
                                     String path = file.getPath() + File.separator + fileImg.get(new Random().nextInt(fileImg.size()));
                                     setImgDormancy(path);
                                 }
@@ -170,6 +211,8 @@ public class BaseDormancyActivity extends BaseActivity{
                         }
                     },3000,3000);
                 }
+            }else {
+                log.d("无文件内容");
             }
         }catch (Exception e){
             e.printStackTrace();

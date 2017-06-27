@@ -1,7 +1,11 @@
 package com.ist.rylibrary.base.application;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
+import android.view.WindowManager;
 
 import com.ist.nativepackage.EyesCtrl;
 import com.ist.nativepackage.RR;
@@ -12,14 +16,20 @@ import com.ist.rylibrary.base.controller.SharedPreferencesController;
 import com.ist.rylibrary.base.entity.AllInfoByRobotIdBean;
 import com.ist.rylibrary.base.entity.AllSceneResultBean;
 import com.ist.rylibrary.base.entity.MallDictsBean;
+import com.ist.rylibrary.base.entity.PersonInformationBean;
+import com.ist.rylibrary.base.entity.SceneQABean;
 import com.ist.rylibrary.base.exception.CatchGlobalException;
 import com.ist.rylibrary.base.util.BaseLogUtil;
+import com.ist.rylibrary.listener.FaceResultListener;
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.UsingFreqLimitedMemoryCache;
 import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 import com.nostra13.universalimageloader.core.download.BaseImageDownloader;
+import com.renying.m4.AiuiObj;
+import com.wewins.facelibrary.api.ApiConstants;
 
 import java.util.List;
 
@@ -32,6 +42,7 @@ import io.reactivex.disposables.Disposable;
  */
 
 public abstract class RyApplication extends Application{
+    private String TAG="RyApplication";
     /**全局上下文
      * 可以通过 RyApplication.getContext() 获取
      * */
@@ -50,7 +61,335 @@ public abstract class RyApplication extends Application{
     /**是否播放音乐**/
     private boolean isPlayMusic=true;
 
+    /***
+     * AIUI是否在工作**/
+    private boolean isAiuiWorkIng;
+
+
+    /**AIUI是否打开**/
+    private boolean isAiuiOpen=false;
+
+    /**人物信息*/
+    private PersonInformationBean mPerson;
+
+    /**是否打开人脸识别**/
+    private boolean isOpenFace=false;
+    private String faceText;
+    private FaceResultListener faceResultListener=null;
+
+    public FaceResultListener getFaceResultListener() {
+        return faceResultListener;
+    }
+
+    public void setFaceResultListener(FaceResultListener faceResultListener) {
+        this.faceResultListener = faceResultListener;
+    }
+
+    public String getFaceText() {
+        return faceText;
+    }
+
+    public void setFaceText(String faceText) {
+        this.faceText = faceText;
+    }
+
+    public boolean isOpenFace() {
+        String isOpenFaceStr=SharedPreferencesController.getInstance().getData("isOpenFace");
+        if(isOpenFaceStr.equals("0")){
+            isOpenFace=false;
+        }else{
+            isOpenFace=true;
+        }
+        return isOpenFace;
+    }
+
+    public void setOpenFace(boolean openFace) {
+        isOpenFace = openFace;
+    }
+
+    private int mPictureSizeWidth; //保存图片的宽度
+    private int mPictureSizeHeight;//保存图片的高度
+    private int mPictureRotate; //保存图片的旋转角度，参数值限定在0/90/180/270
+    private int mPreviewSizeWidth; //预览图片的宽度
+    private int mPreviewSizeHeight;//预览图片的高度
+    private int mPreviewRotate; //预览图片的旋转角度，参数值限定在0/90/180/270
+
+    private boolean mCameraMute; //拍照时是否静音
+    private int mDefaultCamera; //默认开启的摄像头
+    private int mScreenOrientation; //屏幕方向 横屏竖屏
+    private int mDetectInterval; //摄像头识别间隔时间，单位为毫秒
+
+    private String mApiName;
+    /**开关需求集合
+     * switchs[0] 是否启用新老用户识别的人像接口
+     * */
+    private boolean[] switchs ={true};
+    /**是否需要新老用户识别的流程*/
+    public boolean getDistinguishSwitch(){
+        if(switchs.length>0){
+            return switchs[0];
+        }else{
+            return false;
+        }
+    }
+
+    public PersonInformationBean getPerson() {
+        return mPerson;
+    }
+
+    public void setPerson(PersonInformationBean person) {
+        mPerson = person;
+    }
+
+    private WindowManager.LayoutParams wmParams = new WindowManager.LayoutParams();
+
+    public WindowManager.LayoutParams getMywmParams() {
+        return wmParams;
+    }
+
+    //读取参数
+    private String getConfigValue(String key) {
+        SharedPreferences sharedPreferences = getSharedPreferences("CameraConfig", Activity.MODE_PRIVATE);
+        String sValue = sharedPreferences.getString(key, "");
+        return sValue;
+    }
+
+    //写入参数
+    private void SetConfigValue(String key, String value) {
+        SharedPreferences sharedPreferences = getSharedPreferences("CameraConfig", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(key, value);
+        editor.commit();
+        Log.i(TAG, "SetConfigValue, key = " + key + ", value = " + value);
+    }
+
+    public int getPictureSizeWidth() {
+        String sTemp = getConfigValue("pictureSizeWidth");
+        try {
+//            mPictureSizeWidth = Integer.parseInt(sTemp);
+            mPictureSizeWidth = 160;
+        } catch (Exception e) {
+//            mPictureSizeWidth = 640;
+            SetConfigValue("pictureSizeWidth", String.valueOf(mPictureSizeWidth));
+            //e.printStackTrace();
+        }
+        return mPictureSizeWidth;
+    }
+
+    public void setPictureSizeWidth(int pictureSizeWidth) {
+        this.mPictureSizeWidth = pictureSizeWidth;
+        SetConfigValue("pictureSizeWidth", String.valueOf(pictureSizeWidth));
+    }
+
+    public int getPictureSizeHeight() {
+        String sTemp = getConfigValue("pictureSizeHeight");
+        try {
+//            mPictureSizeHeight = Integer.parseInt(sTemp);
+            mPictureSizeHeight = 120;
+        } catch (Exception e) {
+            mPictureSizeHeight = 480;
+//            mPictureSizeHeight = 120;
+            SetConfigValue("pictureSizeHeight", String.valueOf(mPictureSizeHeight));
+            //e.printStackTrace();
+        }
+        return mPictureSizeHeight;
+    }
+
+    public void setPictureSizeHeight(int pictureSizeHeight) {
+        this.mPictureSizeHeight = pictureSizeHeight;
+        SetConfigValue("pictureSizeHeight", String.valueOf(pictureSizeHeight));
+    }
+
+    public int getPictureRotate() {
+        String sTemp = getConfigValue("pictureRotate");
+        try {
+            mPictureRotate = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            mPictureRotate = 0;
+            SetConfigValue("pictureRotate", String.valueOf(mPictureRotate));
+            //e.printStackTrace();
+        }
+        return mPictureRotate;
+    }
+
+    public void setPictureRotate(int pictureRotate) {
+        this.mPictureRotate = pictureRotate;
+        SetConfigValue("pictureRotate", String.valueOf(pictureRotate));
+    }
+
+    public int getPreviewSizeWidth() {
+        String sTemp = getConfigValue("previewSizeWidth");
+        try {
+            mPreviewSizeWidth = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            mPreviewSizeWidth = 640;
+            SetConfigValue("previewSizeWidth", String.valueOf(mPreviewSizeWidth));
+            //e.printStackTrace();
+        }
+        return mPreviewSizeWidth;
+    }
+
+    public void setPreviewSizeWidth(int previewSizeWidth) {
+        this.mPreviewSizeWidth = previewSizeWidth;
+        SetConfigValue("previewSizeWidth", String.valueOf(previewSizeWidth));
+    }
+
+    public int getPreviewSizeHeight() {
+        String sTemp = getConfigValue("previewSizeHeight");
+        try {
+            mPreviewSizeHeight = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            mPreviewSizeHeight = 480;
+            SetConfigValue("previewSizeHeight", String.valueOf(mPreviewSizeHeight));
+            //e.printStackTrace();
+        }
+        return mPreviewSizeHeight;
+    }
+
+    public void setPreviewSizeHeight(int previewSizeHeight) {
+        this.mPreviewSizeHeight = previewSizeHeight;
+        SetConfigValue("previewSizeHeight", String.valueOf(previewSizeHeight));
+    }
+
+    public int getPreviewRotate() {
+        String sTemp = getConfigValue("previewRotate");
+        try {
+            mPreviewRotate = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            mPreviewRotate = 0;
+            SetConfigValue("previewRotate", String.valueOf(mPreviewRotate));
+            //e.printStackTrace();
+        }
+        return mPreviewRotate;
+    }
+
+    public void setPreviewRotate(int previewRotate) {
+        this.mPreviewRotate = previewRotate;
+        SetConfigValue("previewRotate", String.valueOf(previewRotate));
+    }
+
+    public boolean getCameraMute() {
+        String sTemp = getConfigValue("cameraMute");
+        if (sTemp == null || sTemp.length() == 0) {
+            SetConfigValue("cameraMute", "0");
+            mCameraMute = true;
+        } else {
+            mCameraMute = sTemp.equals("1");
+        }
+        return mCameraMute;
+    }
+
+    public int getDefaultCamera() {
+        String sTemp = getConfigValue("defaultCamera");
+        try {
+            mDefaultCamera = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            //e.printStackTrace();
+            mDefaultCamera = 0;
+            SetConfigValue("defaultCamera", String.valueOf(mDefaultCamera));
+        }
+        return mDefaultCamera;
+    }
+
+    public void setDefaultCamera(int cameraId) {
+        mDefaultCamera = cameraId;
+        SetConfigValue("defaultCamera", String.valueOf(cameraId));
+    }
+
+    public int getScreenOrientation() {
+        String sTemp = getConfigValue("screenOrientation");
+        try {
+            mScreenOrientation = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            //e.printStackTrace();
+            mScreenOrientation = 0;
+            SetConfigValue("screenOrientation", String.valueOf(mScreenOrientation));
+        }
+        return mScreenOrientation;
+    }
+
+    public void setScreenOrientation(int screenOrientation) {
+        mScreenOrientation = screenOrientation;
+        SetConfigValue("screenOrientation", String.valueOf(screenOrientation));
+    }
+
+    public int getDetectInterval() {
+        String sTemp = getConfigValue("detectInterval");
+        try {
+            mDetectInterval = Integer.parseInt(sTemp);
+        } catch (Exception e) {
+            mDetectInterval = 10000;
+            SetConfigValue("detectInterval", String.valueOf(mDetectInterval));
+            //e.printStackTrace();
+        }
+        return mDetectInterval;
+    }
+
+    public String getmApiName() {
+        String sTemp = getConfigValue("ApiName");
+        if (sTemp == null || sTemp.length() == 0) {
+            mApiName = ApiConstants.API_FACEPLUS_FREE;
+            SetConfigValue("ApiName", mApiName);
+        } else
+            mApiName = sTemp;
+        return mApiName;
+    }
+
+    public void setApiName(String apiName) {
+        this.mApiName = apiName;
+        SetConfigValue("ApiName", mApiName);
+    }
+
+  private boolean hidePreview=true;
+    //是否隐藏预览窗口
+    public boolean getHidePreview() {
+        String isHidePreviewStr=SharedPreferencesController.getInstance().getData("isHidePreview");
+        if(isHidePreviewStr.equals("0")){
+            hidePreview=true;
+        }else{
+            hidePreview=false;
+
+        }
+        return hidePreview;
+    }
+
+    public void setHidePreview(boolean hidePreview) {
+       this.hidePreview = hidePreview;
+
+    }
+
+    //是否保留摄像头的采集图像
+    public boolean getKeepCameraPicture() {
+        return getConfigValue("keepCameraPicture").equals("1");
+    }
+
+    public void setKeepCameraPicture(boolean keepCameraPicture) {
+        SetConfigValue("keepCameraPicture", true == keepCameraPicture ? "1" : "0");
+    }
+
+    public boolean isAiuiOpen() {
+        return isAiuiOpen;
+    }
+
+    public void setAiuiOpen(boolean aiuiOpen) {
+        isAiuiOpen = aiuiOpen;
+    }
+
+    public boolean isAiuiWorkIng() {
+        return isAiuiWorkIng;
+    }
+
+    public void setAiuiWorkIng(boolean aiuiWorkIng) {
+        isAiuiWorkIng = aiuiWorkIng;
+    }
+
     public boolean isPlayMusic() {
+        String valueStr=SharedPreferencesController.getInstance().getData("isPlayMusic");
+        if(valueStr.equals("0")){
+            isPlayMusic=false;
+        }else{
+            isPlayMusic=true;
+        }
         return isPlayMusic;
     }
 
@@ -98,7 +437,7 @@ public abstract class RyApplication extends Application{
         try{
             //硬件串口初始化
             RR.InitLock();
-            //眼睛屏同步
+           // 眼睛屏同步
             EyesCtrl.getInstance().EyeWork();
         }catch (Exception e){
             e.printStackTrace();
@@ -110,7 +449,8 @@ public abstract class RyApplication extends Application{
     private void initLoader(){
         imageLoader = ImageLoader.getInstance();
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(context)
-                .memoryCache(new WeakMemoryCache())
+//                .memoryCache(new WeakMemoryCache())
+                .memoryCache(new UsingFreqLimitedMemoryCache(20000)) //如果缓存的图片总量超过限定值，先删除使用频率最小的bitmap
                 // 线程池内加载的数量
                 .threadPoolSize(3)
                 // 线程优先级
@@ -151,6 +491,8 @@ public abstract class RyApplication extends Application{
                                 }
                                 getAllInfoByRobotId();
                             }
+                        }else {
+                            log.d("isComplete==="+isComplete);
                         }
                         return false;
                     }
@@ -187,7 +529,6 @@ public abstract class RyApplication extends Application{
                     }
                 }
             }
-
             @Override
             public void onError(Throwable e) {
                 log.d("接口获得机器人编号数据失败 "+e.getMessage());
@@ -206,7 +547,6 @@ public abstract class RyApplication extends Application{
         HttpController.getInstance().getAllSceneAndBot(new Observer<AllSceneResultBean>() {
             @Override
             public void onSubscribe(Disposable d) {
-//                SceneController.getInstance().setCompleteData(false);
             }
             @Override
             public void onNext(AllSceneResultBean value) {
@@ -223,7 +563,7 @@ public abstract class RyApplication extends Application{
             public void onComplete() {
 
             }
-        });
+        },true);
     }
 
     public void getMallDict(){
@@ -236,7 +576,7 @@ public abstract class RyApplication extends Application{
 
             @Override
             public void onNext(List<MallDictsBean> value) {
-                log.d("接口获取字典表数据成功 ");
+                log.d("接口获取字典表数据成功,数据的长度 "+value.toString());
                 if(value.size()>0){
                     SharedPreferencesController.getInstance().saveData("jiangjie",value.get(0).getValue());
                     JiangJieController.getInstance().initJiangJieData(value.get(0).getValue());
@@ -263,6 +603,9 @@ public abstract class RyApplication extends Application{
 
     /***
      * 机器人编号
+     * 用于 通过机器人编号获取信息的接口，当使用机器人编号与数据库中不同时，可以通过此方法设置
+     * 如 我想再 22号机器人上运行程序 获得 6号机器人上的版本数据
+     * 当传null  则读取机器人编号传参数
      * @return 机器人编号
      */
     public abstract String setRobotNo();

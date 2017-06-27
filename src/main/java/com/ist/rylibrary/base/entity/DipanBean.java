@@ -34,7 +34,7 @@ public class DipanBean extends BaseActionBean {
     @Override
     public String toString() {
         return "DipanBean{" +
-                "talkBeforeAction='" + getTalkBeforeAction() + '\'' +
+//                "talkBeforeAction='" + getTalkBeforeAction() + '\'' +
                 ", isActionAfterTalk=" + isActionAfterTalk() +
                 ", action='" + getAction() + '\'' +
                 ", talkErrorAction='" + getActionErrorAction() + '\'' +

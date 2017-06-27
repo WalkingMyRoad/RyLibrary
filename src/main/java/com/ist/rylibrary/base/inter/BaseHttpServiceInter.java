@@ -26,13 +26,22 @@ import retrofit2.http.QueryMap;
 
 public interface BaseHttpServiceInter {
 
-    @GET("rrs/getMallDict")
+//    @GET("rrs/getMallDict")
+//    Observable<MallDictsResultBean<List<MallDictsBean>>> getMallDicts(
+//            @Query("type") String type
+//    );
+
+    @FormUrlEncoded
+    @POST("rrs/getMallDict")
     Observable<MallDictsResultBean<List<MallDictsBean>>> getMallDicts(
-            @Query("type") String type
+            @Field("mallId") String mallId,
+            @Field("robotNo") String robotNo,
+            @Field("type") String type
     );
 
     @GET("rrs/getAllSceneAndBot")
     Observable<AllSceneResultBean> getAllSceneAndBot(
+            @Query("isGetNewData") boolean isGetNewData
     );
 
     @FormUrlEncoded

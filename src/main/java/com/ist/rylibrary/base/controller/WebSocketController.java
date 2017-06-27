@@ -22,11 +22,23 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URL;
 import java.sql.Time;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import de.tavendo.autobahn.WebSocketConnection;
 import de.tavendo.autobahn.WebSocketException;
 import de.tavendo.autobahn.WebSocketHandler;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 import static android.content.Context.CONNECTIVITY_SERVICE;
 import static com.ist.rylibrary.base.service.NetWorkServer.NETWORK_TYPE_INVALID;
@@ -47,6 +59,9 @@ public class WebSocketController {
     private int connectTime = 0;
     /***/
     private int MaxConnextTime = 30;
+
+
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public static WebSocketController getInstance(){
         if(mWebSocketController == null){
@@ -143,11 +158,13 @@ public class WebSocketController {
                         @Override
                         public void onClose(int code, String reason) {
                             super.onClose(code, reason);
+                            RyApplication.getLog().d("WebSocketController 断开了连接 = "+code+"reason = "+reason);
                             post(WebSocketService.SOCKET_ACCEPT,ConnectJson(false).toString());
                         }
                         @Override
                         public void onOpen() {
                             super.onOpen();
+                            RyApplication.getLog().d("WebSocketController 连接成功");
                             post(WebSocketService.SOCKET_ACCEPT,ConnectJson(true).toString());
                             if(waitSendMessage!=null){
                                 post(waitSendMessage);
@@ -228,9 +245,7 @@ public class WebSocketController {
                     websocketHost = websocketHost + "/";
                 }
                 websocketId = SharedPreferencesController.getInstance().getWebsocketId();
-                if(websocketId!=null && websocketId.trim().length()>0){
-                    websocketId = "websocket/"+websocketId;
-                }else{
+                if(websocketId ==null || websocketId.trim().length()==0){
                     websocketId = "websocket/RB_"+ ToolUtil.getInstance().getDeviceId();
                 }
             }
@@ -249,6 +264,7 @@ public class WebSocketController {
      * @param message  消息内容
      */
     public void defaultHandling(int type,String message){
+        RyApplication.getLog().d("WebSocket , type "+type+",message = "+message);
         try{
             switch (type){
                 case WebSocketService.SOCKET_SEND:

@@ -147,8 +147,6 @@ public class HttpUtil {
         return null;
     }
 
-
-
 //    private void sendNetWorkInterFaceMain(final int MaxLoadTime, int ConnectOutTime, String url, final HttpListener listener, Map<String,String>  paramsMap){
 //        try{
 //

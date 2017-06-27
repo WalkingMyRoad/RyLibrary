@@ -4,9 +4,22 @@ import android.os.Environment;
 import android.util.Log;
 import android.util.Xml;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.ist.rylibrary.base.application.RyApplication;
+import com.ist.rylibrary.base.entity.AllSceneResultBean;
+import com.ist.rylibrary.base.entity.CustomSceneBean;
+import com.ist.rylibrary.base.entity.PageBean;
+import com.ist.rylibrary.base.entity.Robotsbean;
+import com.ist.rylibrary.base.entity.SceneBean;
+import com.ist.rylibrary.base.entity.SceneQABean;
+import com.ist.rylibrary.base.entity.TipsBean;
+import com.ist.rylibrary.base.util.BaseLogUtil;
 import com.ist.rylibrary.base.util.ToolUtil;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -16,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,32 +37,30 @@ import java.util.Map;
  * 基础的本地数据控制器
  */
 public class LocalDataController {
-    /**存储数据的基础路径*/
+    /**存储数据的基础路径 目前为 sdcard下的包名文件*/
     private String BASE_PATH_LOCAL_DATA;
-    /**配置文件的路径*/
+    /**基础配置文件的路径 的名称*/
     private String CONFIG_XML = File.separator+"config.xml";
-    /**测试环境使用的demo xml*/
+    /**测试环境使用的demo xml 简易名称*/
     private String DEMO_XML = File.separator+"demo.xml";
-    /**默认服务器文件写入路径*/
-    private String SERVER_DATA_TXT = File.separator + "data";
-    private String GIT_IMAGE_VIEW = File.separator + "gif";
-    private String FILE_NAME_SCENE_QAS = File.separator + "sceneQas.txt";
-    private String FILE_NAME_ROBOTS = File.separator + "robots.txt";
-    private String FILE_NAME_SCENES = File.separator + "scenes.txt";
-    private String FILE_NAME_PAGES = File.separator +"pages.txt";
-    private String FILE_NAME_CUSTOM_SCENES = File.separator + "customScenes.txt";
+    /**默认服务器文件写入的文件名称*/
+    private String SERVER_DATA_TXT = File.separator + "data";//data文件
+    private String GIT_IMAGE_VIEW = File.separator + "gif";//存放gif图片的文件
+    private String FILE_NAME_SCENE_QAS = File.separator + "sceneQas.txt";//场景问答文件
+    private String FILE_NAME_ROBOTS = File.separator + "robots.txt";//机器人信息文件
+    private String FILE_NAME_SCENES = File.separator + "scenes.txt";//场景文件
+    private String FILE_NAME_PAGES = File.separator +"pages.txt";//页面文件
+    private String FILE_NAME_TIPS = File.separator +"tips.txt";//小贴士文件
+    private String FILE_NAME_CUSTOM_SCENES = File.separator + "customScenes.txt";//场景问答邮件
     /**底盘的坐标信息**/
-    private String FILE_NAME_POSITION= File.separator + "positionData.txt";
+    private String FILE_NAME_POSITION= File.separator + "positionData.txt";//底盘坐标文件
     /**本地数据控制器实例*/
     private static LocalDataController sLocalDataController;
     /**构造函数*/
     public LocalDataController(){
         try{
             String packageName = ToolUtil.getInstance().getAppPackageName();
-            Log.i("packageName "," packageName = "+packageName);
-//            packageName = packageName.replace(".","/");
             BASE_PATH_LOCAL_DATA = Environment.getExternalStorageDirectory() + File.separator + packageName;
-            Log.i("LocalDataController","获取到的包名 "+BASE_PATH_LOCAL_DATA);
             File file = new File(BASE_PATH_LOCAL_DATA);
             if(!file.exists()){
                 file.mkdirs();
@@ -70,7 +82,7 @@ public class LocalDataController {
 
     /***
      * 读取指定路径下的 xml文件
-     * @param filePath 文件指定路径
+     * @param filePath 文件指定路径,本地的全路径地址
      * @return  返回数据map值
      */
     public Map<String,String> readConfigXML(String filePath){
@@ -92,16 +104,6 @@ public class LocalDataController {
                         switch (eventType){
                             case XmlPullParser.START_TAG:  //若节点名称为开始节点
                                 if(tagName.equals("config")){
-                                }else if(tagName.equals("address")){
-                                    map.put(tagName,parser.nextText());
-                                }else if (tagName.equals("mall_id")){
-                                    map.put(tagName,parser.nextText());
-                                }else if (tagName.equals("mall_number")){
-                                    map.put(tagName,parser.nextText());
-                                }else if (tagName.equals("robot_number")){
-                                    map.put(tagName,parser.nextText());
-                                }else if (tagName.equals("isFormal")){
-                                    map.put(tagName,parser.nextText());
                                 }else{
                                     map.put(tagName,parser.nextText());
                                 }
@@ -126,6 +128,101 @@ public class LocalDataController {
         }
         return null;
     }
+
+    /***
+     * 本地文件存储
+     * 调用全部情景获取接口成功时调用，将信息存储在 sdcard/包名/data/下的文件 填充数据
+     * @param bean  传过来的场景对象
+     */
+    public boolean saveSceneData(final AllSceneResultBean bean){
+        String path=getSERVER_DATA_TXT()+"/";
+        Log.i("保存的路径","path=="+path);
+        ToolUtil.makeRootDirectory(path);
+        try{
+            if(bean.getSceneQas()!=null && bean.getSceneQas().size()>0){// 场景问答
+//                Log.i("旧版本场景问答保存地址：","getFILE_NAME_SCENE_QAS()="+getFILE_NAME_SCENE_QAS());
+                ToolUtil.getInstance().writeTxtToFile(new Gson().toJson(bean.getSceneQas()),
+                        getFILE_NAME_SCENE_QAS());
+            }
+            if(bean.getRobots()!=null){//机器人信息
+                ToolUtil.getInstance().writeTxtToFile(new Gson().toJson(bean.getRobots() , Robotsbean.class),
+                        getFILE_NAME_ROBOTS());
+            }
+            if(bean.getScenes()!=null && bean.getScenes().size()>0){// 场景信息
+                ToolUtil.getInstance().writeTxtToFile(new Gson().toJson(bean.getScenes()),
+                        getFILE_NAME_SCENES());
+            }
+            if(bean.getPages()!=null){// 页面信息
+                ToolUtil.getInstance().writeTxtToFile(new Gson().toJson(bean.getPages()),
+                        getFILE_NAME_PAGES());
+            }
+            if(bean.getCustomScenes()!=null && bean.getCustomScenes().size()>0){//自定义场景
+                ToolUtil.getInstance().writeTxtToFile(new Gson().toJson(bean.getCustomScenes()),
+                        getFILE_NAME_CUSTOM_SCENES());
+            }
+            if(bean.getTipsData()!=null && bean.getTipsData().size()>0){//小贴士信息
+                ToolUtil.getInstance().writeTxtToFile(new Gson().toJson(bean.getTipsData()),
+                        getFILE_NAME_TIPS());
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /***
+     * 读取本地文件存储信息
+     * 当获取全部情景信息接口失败时调用，读取下载在 sdcard/包名/data/下的文件 填充数据
+     */
+    public AllSceneResultBean readSceneData(){
+        AllSceneResultBean sceneResultBean = new AllSceneResultBean();
+        try{
+            String jsonStr = ToolUtil.getInstance().readFileSdcardFile(getFILE_NAME_SCENE_QAS());
+            List<SceneQABean> jaSceneQas = new Gson().fromJson(jsonStr, new TypeToken<List<SceneQABean>>(){}.getType());
+            sceneResultBean.setSceneQas(jaSceneQas);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            String jsonStr = ToolUtil.getInstance().readFileSdcardFile(getFILE_NAME_ROBOTS());
+            Robotsbean jsRobots = new Gson().fromJson(jsonStr, new TypeToken<Robotsbean>(){}.getType());
+            sceneResultBean.setRobots(jsRobots);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            String jsonStr = ToolUtil.getInstance().readFileSdcardFile(getFILE_NAME_SCENES());
+            List<SceneBean> jaScenes = new Gson().fromJson(jsonStr, new TypeToken<List<SceneBean>>(){}.getType());
+            sceneResultBean.setScenes(jaScenes);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            String jsonStr = ToolUtil.getInstance().readFileSdcardFile(getFILE_NAME_PAGES());
+            List<PageBean> jaPages = new Gson().fromJson(jsonStr, new TypeToken<List<PageBean>>(){}.getType());
+            sceneResultBean.setPages(jaPages);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            String jsonStr = ToolUtil.getInstance().readFileSdcardFile(getFILE_NAME_CUSTOM_SCENES());
+            List<CustomSceneBean> jaCustomScenes = new Gson().fromJson(jsonStr, new TypeToken<List<CustomSceneBean>>(){}.getType());
+            sceneResultBean.setCustomScenes(jaCustomScenes);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        try{
+            String jsonStr = ToolUtil.getInstance().readFileSdcardFile(getFILE_NAME_TIPS());
+            List<TipsBean> tipsBeen = new Gson().fromJson(jsonStr, new TypeToken<List<TipsBean>>(){}.getType());
+            sceneResultBean.setTipsData(tipsBeen);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return sceneResultBean;
+    }
+
+
     /***
      *
      * @return
@@ -159,36 +256,42 @@ public class LocalDataController {
      * @return ／文件名
      */
     public String getFILE_NAME_SCENE_QAS() {
-        return FILE_NAME_SCENE_QAS;
+        return getSERVER_DATA_TXT()+FILE_NAME_SCENE_QAS;
     }
     /***
      * 获取机器人信息数据的存储文件的文件名
      * @return ／文件名
      */
     public String getFILE_NAME_ROBOTS() {
-        return FILE_NAME_ROBOTS;
+        return getSERVER_DATA_TXT()+FILE_NAME_ROBOTS;
     }
     /***
      * 获取场景数据的存储文件的文件名
      * @return ／文件名
      */
     public String getFILE_NAME_SCENES() {
-        return FILE_NAME_SCENES;
+        return getSERVER_DATA_TXT()+FILE_NAME_SCENES;
     }
     /***
      * 获取页面数据的存储文件的文件名
      * @return ／文件名
      */
     public String getFILE_NAME_PAGES() {
-        return FILE_NAME_PAGES;
+        return getSERVER_DATA_TXT()+FILE_NAME_PAGES;
     }
-
+    /***
+     * 获取小贴士存储文件的文件名
+     * @return ／文件名
+     */
+    public String getFILE_NAME_TIPS() {
+        return getSERVER_DATA_TXT()+FILE_NAME_TIPS;
+    }
     /***
      * 获取自定义场景文件的文件名
      * @return  ／文件名
      */
     public String getFILE_NAME_CUSTOM_SCENES() {
-        return FILE_NAME_CUSTOM_SCENES;
+        return getSERVER_DATA_TXT()+FILE_NAME_CUSTOM_SCENES;
     }
     /***
      * 获取点位存储文件的文件名

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemProperties;
@@ -22,10 +24,14 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.ist.rylibrary.R;
+import com.ist.rylibrary.base.application.RyApplication;
 import com.ist.rylibrary.base.controller.ActivityController;
 import com.ist.rylibrary.base.controller.AiuiController;
 import com.ist.rylibrary.base.controller.SceneController;
@@ -35,6 +41,16 @@ import com.ist.rylibrary.base.ui.ProgressDialog;
 import com.ist.rylibrary.base.ui.VerticalSeekBar;
 import com.ist.rylibrary.base.util.BaseLogUtil;
 import com.ist.rylibrary.base.util.TimeUtil;
+import com.ist.rylibrary.face.activity.FloatCamera;
+import com.ist.rylibrary.listener.FaceResultListener;
+import com.wewins.facelibrary.api.ApiConstants;
+import com.wewins.facelibrary.api.NewApiBase;
+import com.wewins.facelibrary.api.rr.RRBusinessApi;
+import com.wewins.facelibrary.utils.FileUtil;
+import com.wewins.facelibrary.utils.ImageUtil;
+
+import org.apache.http.HttpStatus;
+import org.json.JSONObject;
 
 import java.lang.reflect.Field;
 
@@ -44,6 +60,7 @@ import java.lang.reflect.Field;
 
 public abstract class BaseActivity extends AppCompatActivity implements View.OnClickListener, VerticalSeekBar.OnSeekBarChangeListener,specialAiuiListener {
     protected Context context;
+    protected RyApplication ryApplication;
     /**
      * 使用LOG日志打印是出现的
      */
@@ -85,6 +102,7 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
     private ImageView voiceImage;
     private Handler handler = new Handler();
     private TextView txt_elec;
+
     /**
      * 电量展示
      **/
@@ -100,6 +118,7 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
         try {
             TAG = this.getClass().getSimpleName();
             context = this;
+            ryApplication=(RyApplication)getApplicationContext();
             //设置屏幕全屏
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
             if (getMainView() > 0) {
@@ -146,6 +165,32 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
             e.printStackTrace();
         }
     }
+ public static void setFaceText(String text){
+     try{
+         Toast.makeText(RyApplication.getContext(),text,Toast.LENGTH_SHORT).show();
+     }catch (Exception e){
+         e.printStackTrace();
+     }
+
+ }
+    public static void startVideoViewActivity(String path){
+
+        try {
+            Bundle bundle=new Bundle();
+            bundle.putString("path",path);
+            InfraredService.clearWaitGuideCount();
+            Intent intent = new Intent(RyApplication.getContext(), BaseVideoViewActivity.class);
+                intent.putExtras(bundle);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            RyApplication.getContext().startActivity(intent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
 
     private void initVoice() {
         try {
@@ -303,6 +348,7 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
     private void initBaseView() {
         try {
             parent = (RelativeLayout) findViewById(R.id.frame_parent);
+
 //        frameTop=(LinearLayout)findViewById(R.id.frame_top);
 //        frameFooter=(LinearLayout)findViewById(R.id.frame_footer);
             setButtonGroup();
@@ -587,6 +633,7 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
         try {
             super.onResume();
             log.d("onResume");
+            //有需要号码达人的在业务里面自行设置
             AiuiController.getInstance().setSpecialAiuiListener(this);
             SceneController.getInstance().changeScene(this.getClass().getName());
             //电量同步
@@ -687,5 +734,24 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    /**打开人脸识别**/
+    public void startFace(){
+        if(!FloatCamera.isOpenCamera){
+            Intent mIntent = new Intent("startFaceDetect");
+            mIntent.setClass(getApplicationContext(), FloatCamera.class);
+            getApplicationContext().startService(mIntent);
+        }
+    }
+
+
+
+    /**关闭人脸识别**/
+    public void stopFace(){
+        Intent mIntent = new Intent("exitFaceDetect");
+        mIntent.setClass(getApplicationContext(), FloatCamera.class);
+        getApplicationContext().startService(mIntent);
     }
 }

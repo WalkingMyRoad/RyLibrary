@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 import com.ist.rylibrary.base.controller.ActivityController;
 import com.ist.rylibrary.base.controller.AiuiController;
 import com.ist.rylibrary.base.event.AiuiMessageEvent;
+import com.ist.rylibrary.base.listener.BaseAiuiListener;
 import com.ist.rylibrary.base.util.ToolUtil;
 import com.ist.rylibrary.myfloatwindow.controller.FloatWindowController;
 import com.ist.rylibrary.myfloatwindow.service.FloatWindowService;
@@ -69,6 +70,7 @@ public class AiuiService extends Service{
         AiuiController.getInstance().initRRtts();
         AiuiController.getInstance().AiuiWork();
         AiuiController.getInstance().AiuiWakeUp();
+        AiuiController.getInstance().setAutoWakeUp(true);
     }
 
     @Override
@@ -111,16 +113,18 @@ public class AiuiService extends Service{
                 AiuiController.getInstance().startTTS(message);
                 break;
             case AIUI_TYPE_CLOSE:
-                AiuiController.getInstance().stopTTS();
+//                AiuiController.getInstance().stopTTS();
+                AiuiController.getInstance().setAutoWakeUp(false);
                 AiuiController.getInstance().AiuiSleep();
                 break;
             case AIUI_TYPE_STOP:
                 AiuiController.getInstance().stopTTS();
                 break;
             case AIUI_TYPE_OPEN:
-                FloatWindowController.getInstance().post(FloatWindowService.FLOAT_OPEN);
+                BaseAiuiListener.isDealVoice = true;//允许进行语音匹配
                 AiuiController.getInstance().AiuiWakeUp();
                 AiuiController.getInstance().setAutoWakeUp(true);
+                FloatWindowController.getInstance().post(FloatWindowService.FLOAT_OPEN);
                 break;
         }
     }

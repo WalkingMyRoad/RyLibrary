@@ -43,6 +43,8 @@ public class BaseBoardCast extends BroadcastReceiver {
             }catch (Exception e){
                 e.printStackTrace();
             }
+        }else if(action.equals("com.wewins.facedetect.notify")){
+//            RyApplication.getLog().d("人脸识别的信息： "+information);
         }
     }
 

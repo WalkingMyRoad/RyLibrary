@@ -133,6 +133,23 @@ public class ActivityController {
         }
     }
 
+    /**
+     * 删除当前activity
+     * @param activityName  传入字符串名字
+     */
+    public void finishCurrentActivity(String activityName){
+        try{
+            log.d("删除当前页面 "+activityName);
+            for (int i = activities.size()-1 ;i >= 0; i--){
+                if(activities.get(i).getClass().getSimpleName().contains(activityName)){
+                    activities.get(i).finish();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
     /***
      * 删除最上端的activity
      * 鄙夫说返回时 调用退出当前顶层的 activity

@@ -16,11 +16,13 @@ import com.ist.rylibrary.base.controller.AiuiController;
 import com.ist.rylibrary.base.controller.InfraredController;
 import com.ist.rylibrary.base.controller.JiangJieController;
 import com.ist.rylibrary.base.controller.SceneController;
+import com.ist.rylibrary.base.controller.SharedPreferencesController;
 import com.ist.rylibrary.base.controller.YinDaoController;
 import com.ist.rylibrary.base.entity.MallDictsBean;
 import com.ist.rylibrary.base.event.InfraredMessageEvent;
 import com.ist.rylibrary.base.function.HttpMallDictsFunction;
 import com.ist.rylibrary.base.inter.BaseHttpServiceInter;
+import com.ist.rylibrary.base.listener.BaseAiuiListener;
 import com.ist.rylibrary.base.listener.RyRRttsListener;
 import com.ist.rylibrary.base.util.HttpUtil;
 import com.ist.rylibrary.base.util.TimeUtil;
@@ -28,6 +30,7 @@ import com.ist.rylibrary.base.util.ToolUtil;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -89,6 +92,14 @@ public class InfraredService extends Service {
      **/
     private static RyApplication application;
 
+    public AudioManager getmAudioManager() {
+        return mAudioManager;
+    }
+
+    /**基础数据是否获取完成**/
+
+    public static boolean isCompleteData=false;
+
     private Handler handler = new Handler();
 
     /**
@@ -100,6 +111,7 @@ public class InfraredService extends Service {
     private AudioManager mAudioManager = null;
 
 
+
     /***
      * 打开service
      * @param context
@@ -108,6 +120,31 @@ public class InfraredService extends Service {
         sIntent = new Intent(context, InfraredService.class);
         context.startService(sIntent);
         application = (RyApplication) context.getApplicationContext();
+    }
+
+    private void getBaseData(){
+        String shoutFreqSecondStr=SharedPreferencesController.getInstance().getData("shoutFreqSecond");
+        if(!shoutFreqSecondStr.equals("")){
+            shoutFreqSecond=Integer.parseInt(shoutFreqSecondStr);
+        }
+        String   guideFreqSecondStr = SharedPreferencesController.getInstance().getData("guideFreqSecond");
+        if(!guideFreqSecondStr.equals("")){
+            guideFreqSecond=Integer.parseInt(guideFreqSecondStr);
+        }
+        String shoutVolumeStr=SharedPreferencesController.getInstance().getData("shoutVolume");
+        if(!shoutVolumeStr.equals("")){
+            shoutVolume=Integer.parseInt(shoutVolumeStr);
+        }
+
+        String guideVolumeStr=SharedPreferencesController.getInstance().getData("guideVolume");
+        if(!guideVolumeStr.equals("")){
+            guideVolume=Integer.parseInt(guideVolumeStr);
+        }
+
+        String shout_switchStr=SharedPreferencesController.getInstance().getData("shout_switch");
+        if(!shout_switchStr.equals("")){
+            shout_switch=shout_switchStr;
+        }
     }
 
     /***
@@ -132,7 +169,6 @@ public class InfraredService extends Service {
     public void onCreate() {
         super.onCreate();
         ToolUtil.getInstance().loadEventBus(this);
-
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -161,7 +197,8 @@ public class InfraredService extends Service {
 
     public static void getdata() {
         String[] dicts = {"shout_freq_second", "guide_freq_second",
-                "shout_volume", "guide_volume", "shout_switch","is_play_music"};
+                "shout_volume", "guide_volume", "shout_switch","is_play_music",
+                "is_konw_user","is_show_face_window","face++"};
         for (int i = 0; i < dicts.length; i++) {
             getMallDict(dicts[i], i);
         }
@@ -169,6 +206,7 @@ public class InfraredService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d("InfraredService","打开红外服务");
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -227,6 +265,12 @@ public class InfraredService extends Service {
                 waitShoutCount = 0;
                 return;
             }
+            if(BaseAiuiListener.isOpenResultRawToWebSocket){
+                Log.i(TAG, "要使用自定义的websocket定义");
+                personNotExistCount = 0;
+                waitShoutCount = 0;
+                return;
+            }
 
             Log.i(TAG, "当前音量是：" + lastVolum);
             if (waitShoutCount > 0 && shoutFreqSecond > 0
@@ -269,6 +313,12 @@ public class InfraredService extends Service {
                 Log.i(TAG, "在讲解过程中，不开启吆喝！");
                 personExistCount = 0;
                 waitGuideCount = 0;
+                return;
+            }
+            if(BaseAiuiListener.isOpenResultRawToWebSocket){
+                Log.i(TAG, "要使用自定义的websocket定义");
+                personNotExistCount = 0;
+                waitShoutCount = 0;
                 return;
             }
             if(continueGuideCount >= 2) {
@@ -353,7 +403,8 @@ public class InfraredService extends Service {
     private static void getMallDict(String type, final int tag) {
         BaseHttpServiceInter serviceInter = new HttpUtil().getMyBaseService();
         if (serviceInter != null) {
-            serviceInter.getMallDicts(type)
+            serviceInter.getMallDicts(SharedPreferencesController.getInstance().getMailId()
+                    ,SharedPreferencesController.getInstance().getRobotNumber(),type)
                     .map(new HttpMallDictsFunction<List<MallDictsBean>>())
                     .subscribeOn(Schedulers.io())
                     .unsubscribeOn(Schedulers.io())
@@ -365,26 +416,65 @@ public class InfraredService extends Service {
                         }
                         @Override
                         public void onNext(List<MallDictsBean> value) {
+                            Log.d("getMallMessage","参数 "+value);
+                            if(tag==7){
+                                isCompleteData=true;
+                            }
                             if (value.size() > 0) {
                                 MallDictsBean dictsBean = value.get(0);
                                 if (tag == 0) {
                                     shoutFreqSecond = Integer.parseInt(dictsBean.getValue());
+                                    SharedPreferencesController.getInstance().saveData("shoutFreqSecond",shoutFreqSecond);
                                 } else if (tag == 1) {
                                     guideFreqSecond = Integer.parseInt(dictsBean.getValue());
+                                    SharedPreferencesController.getInstance().saveData("guideFreqSecond",guideFreqSecond);
                                 } else if (tag == 2) {
                                     shoutVolume = Integer.parseInt(dictsBean.getValue());
+                                    SharedPreferencesController.getInstance().saveData("shoutVolume",shoutVolume);
                                 } else if (tag == 3) {
                                     guideVolume = Integer.parseInt(dictsBean.getValue());
+                                    SharedPreferencesController.getInstance().saveData("guideVolume",guideVolume);
                                 } else if (tag == 4) {
                                     shout_switch = dictsBean.getValue();
+                                    SharedPreferencesController.getInstance().saveData("shout_switch",shout_switch);
                                 }else if(tag==5){
                                     String valueStr=dictsBean.getValue();
+                                    SharedPreferencesController.getInstance().saveData("isPlayMusic",valueStr);
                                     if(valueStr.equals("0")){
                                         application.setPlayMusic(false);
                                     }else{
                                         application.setPlayMusic(true);
                                     }
 
+                                }else if(tag==6){//是否要认识新老用户
+                                    String valueStr=dictsBean.getValue();
+                                    SharedPreferencesController.getInstance().saveData("isOpenFace",valueStr);
+                                    if(valueStr.equals("0")){
+                                        application.setOpenFace(false);
+                                    }else{
+                                        application.setOpenFace(true);
+                                    }
+                                }else if(tag==7){//是否要展示人脸识别的窗口
+                                    String valueStr=dictsBean.getValue();
+                                    SharedPreferencesController.getInstance().saveData("isHidePreview",valueStr);
+                                    if(valueStr.equals("0")){
+                                        application.setHidePreview(true);
+                                    }else{
+                                        application.setHidePreview(false);
+
+                                    }
+                                }else if(tag == 8){
+                                    String valueStr  = dictsBean.getValue();
+                                    try{
+                                        JSONObject jsonObject = new JSONObject(valueStr);
+                                        if(jsonObject.has("faceset_token")){
+                                            SharedPreferencesController.getInstance().saveData("faceset_token",jsonObject.getString("faceset_token"));
+                                            Log.d("getMallMessage",SharedPreferencesController.getInstance().getFacesetToken());
+                                        }
+                                    }catch (Exception e){
+                                        e.printStackTrace();
+                                    }
+                                    Log.d("getMallMessage",dictsBean.getValue());
                                 }
 
                             }
@@ -410,8 +500,6 @@ public class InfraredService extends Service {
      * @param volume
      */
     private void setVolume(int volume) {
-//        isChangeShoutVolum=true;
-//        isChangeGuideVolum=true;
         AudioManager mAudioManager = (AudioManager) RyApplication.getContext().getSystemService(Context.AUDIO_SERVICE);
         int maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM);
         Log.i(TAG, "系统的最大音量是：" + maxVolume);

@@ -3,6 +3,7 @@ package com.ist.rylibrary.base.controller;
 import com.ist.rylibrary.base.application.RyApplication;
 import com.ist.rylibrary.base.listener.YinDaoAiuiListener;
 import com.ist.rylibrary.base.listener.YinDaoChassisListener;
+import com.ist.rylibrary.base.listener.YindaoCompleteListener;
 import com.ist.rylibrary.base.service.AiuiService;
 import com.renying.m4.AIUI;
 import com.wewins.robot.Dipan;
@@ -24,6 +25,8 @@ public class YinDaoController implements YinDaoChassisListener,YinDaoAiuiListene
 
     private YinDaoAiuiListener mYinDaoAiuiListener;
 
+    private  YindaoCompleteListener yindaoCompleteListener;
+
     public static YinDaoController getInstance(){
         if(sYinDaoController == null){
             sYinDaoController = new YinDaoController();
@@ -37,9 +40,20 @@ public class YinDaoController implements YinDaoChassisListener,YinDaoAiuiListene
      * 处理引导流程的底盘指令
      * @param action  引导指令
      */
+
     public void dealChassisAction(String action){
+        dealChassisAction(action,null);
+    }
+    public void setYindaoCompleteListener(YindaoCompleteListener yindaoCompleteListener){
+        this.yindaoCompleteListener=yindaoCompleteListener;
+    }
+    public void dealChassisAction(String action, YindaoCompleteListener yindaoCompleteListener){
         try{
             YindaoStart();
+            this.yindaoCompleteListener=yindaoCompleteListener;
+            if (action.contains("#")){
+                action = action.replaceAll("#","");
+            }
             if(action.indexOf("_")>-1){
                 String[] chassisSplit = action.split("_");
                 if(chassisSplit.length == 3){
@@ -89,6 +103,9 @@ public class YinDaoController implements YinDaoChassisListener,YinDaoAiuiListene
         RyApplication.getLog().d("YinDaoController 引导动作完成后的话 "+yindaoAction+"是否安全完成 "+isComplete +"地点 "+where);
         setYinDaoAiuiListener(this);
         SceneController.getInstance().rrPeople(yindaoAction,null,"");
+        if(yindaoCompleteListener!=null){
+            yindaoCompleteListener.complete();
+        }
         return true;
     }
 

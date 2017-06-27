@@ -7,4 +7,5 @@ package com.ist.rylibrary.base.entity;
 
 public class YemianBean extends BaseActionBean {
 
+
 }

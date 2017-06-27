@@ -5,8 +5,9 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.google.gson.Gson;
+//import com.ist.asr.RRasr;
+//import com.ist.asr.RRtts;
 import com.ist.asr.RRasr;
-import com.ist.asr.RRtts;
 import com.ist.rylibrary.base.application.RyApplication;
 import com.ist.rylibrary.base.entity.FinalQABean;
 import com.ist.rylibrary.base.entity.FinalQASemanticBean;
@@ -26,6 +27,7 @@ import com.ist.rylibrary.base.util.ToolUtil;
 import com.ist.rylibrary.myfloatwindow.controller.FloatWindowController;
 import com.renying.m4.AIUI2;
 import com.renying.m4.AiuiObj;
+import com.renying.m4.RRtts;
 import com.renying.m4.Xunfei;
 
 import org.greenrobot.eventbus.EventBus;
@@ -40,7 +42,7 @@ import org.json.JSONObject;
 public class AiuiController {
     private  String TAG="AiuiController";
     /**播放的实例*/
-    private AiuiObj aiui;
+    public AiuiObj aiui;
     /**播放的类型*/
     private String AiuiType;
     /**语音合成对象*/
@@ -229,12 +231,25 @@ public class AiuiController {
                 aiui = getNewObj();
                 BaseAiuiListener mAIUIListener = new BaseAiuiListener(AiuiType);
                 if(aiui!=null){
+                    RyApplication ryApplication=(RyApplication)RyApplication.getContext().getApplicationContext();
+                    ryApplication.setAiuiOpen(true);
                     aiui.SetContext(RyApplication.getContext());
                     aiui.AIUIWork(mAIUIListener, 0, 0, "");
                 }
             }
         }catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    /***
+     * 关闭AIUI
+     * **/
+    public void AiuiStop(){
+        RyApplication ryApplication=(RyApplication)RyApplication.getContext().getApplicationContext();
+        if(aiui!=null){
+            aiui.AIUIStop();
+            ryApplication.setAiuiOpen(false);
         }
     }
 
@@ -341,6 +356,24 @@ public class AiuiController {
                     }
                 }
                 RyApplication.getLog().d("SceneController 范爷语义解析后获得的数据 "+qAnswer.toString());
+                String asrResultJsonOrCmd=qAnswer.getText();
+                RyApplication.getLog().d("用户说的话::"+asrResultJsonOrCmd);
+                RyApplication ryApplication=(RyApplication)RyApplication.getContext().getApplicationContext();
+                if(ryApplication.getPerson()!=null){
+                    RyApplication.getLog().d(
+                            "是新用户?"+ryApplication.getPerson().isNewPerson()
+                            +"是否已经上传人脸图片给face++？"+SceneController.getInstance().isUseOldQuestion);
+                    if(ryApplication.getPerson().isNewPerson()
+                            &&!SceneController.getInstance().isUseOldQuestion
+                            &&SceneController.getInstance().isAddUserFace){
+                        if(asrResultJsonOrCmd.indexOf("好")>-1){
+                            SceneController.getInstance().isUseOldQuestion=true;
+                            SceneController.getInstance().rrPeople(SceneController.getInstance().lastQAnswer,
+                                    SceneController.getInstance().lastIflySemantic);
+                        }
+
+                    }
+                }
                 FloatWindowController.getInstance().post(null,qAnswer.getText());
                 if(!specialServiceOrOper(qAnswer)){
                     if(isRobotAnswer){
@@ -367,6 +400,9 @@ public class AiuiController {
         isRobotAnswer = robotAnswer;
     }
 
+    public boolean isRobotAnswer() {
+        return isRobotAnswer;
+    }
 
     //检查service
     private boolean specialServiceOrOper(FinalQABean bean){
@@ -376,7 +412,7 @@ public class AiuiController {
                 isSure = NumberService();
             }else if(bean.getSemantic()!=null && bean.getSemantic().getSlots()!=null
                     && bean.getSemantic().getSlots().getOper()!=null ){
-                if(bean.getSemantic().getSlots().getOper().equals("口令")
+                if(bean.getSemantic().getSlots().getOper().trim().equals("口令")
                  || bean.getSemantic().getSlots().getOper().equals("选择")){
                     isSure = cmdOper();
                 }
@@ -578,18 +614,22 @@ public class AiuiController {
      * @return 是否是口令返回
      */
     private boolean cmdOper(){
-        RyApplication.getLog().d("Aiui 口令");
+//        RyApplication.getLog().d("Aiui 口令");
         if(getSpecialAiuiListener() != null){
-            RyApplication.getLog().d("Aiui 口令1");
+//            RyApplication.getLog().d("Aiui 口令1");
             FinalQASemanticBean semanticBean = qAnswer.getSemantic();
             if(semanticBean != null){
                 FinalQASemanticSlotsBean slotsBean = semanticBean.getSlots();
                 if(slotsBean != null ){
+//                    RyApplication.getLog().d("Aiui 口令3 ");
                     if(slotsBean.getOper().equals("口令") || slotsBean.getOper().equals("选择")){
                         FinalQASemanticSlotsObjBean objBean = slotsBean.getObj();
+//                        RyApplication.getLog().d("Aiui 口令4 "+objBean);
                         if(objBean != null){
                             String item = objBean.getItem();
+//                            RyApplication.getLog().d("Aiui 口令2 "+item);
                             if(item != null){
+//                                RyApplication.getLog().d("Aiui 口令5 ");
                                 if(getSpecialAiuiListener().cmdResult(qAnswer.getText(),item,qAnswer.getSemantic().getSlots())){
                                     setSpecialAiuiListener(null);
                                 }
@@ -601,25 +641,6 @@ public class AiuiController {
             }
         }
         return false;
-    }
-
-
-    private String ChangeNumber(String number){
-        String str = code;
-        if(str.equals("十")){
-            str = "10";
-        }else {
-            if(str.startsWith("十")){
-                str = str.replace("十","1");
-            }else if(str.endsWith("十")){
-                str = str.substring(0,str.length()-1) + "0";
-            }
-            str = str.replaceAll("一","1")
-                    .replaceAll("二","2").replaceAll("三","3").replaceAll("四","4")
-                    .replaceAll("五","5").replaceAll("六","6").replaceAll("七","7")
-                    .replaceAll("八","8").replaceAll("九","9").replace("十","");
-        }
-        return str;
     }
 
     /***
@@ -743,10 +764,12 @@ public class AiuiController {
                             public void onCompletion(MediaPlayer mediaPlayer) {
 //                                EventBus.getDefault().post(new AiuiMessageEvent("您是否还需要听其他的歌曲呢？如果需要，请报歌名！"));
                                 AiuiController.getInstance().post("您是否还需要听其他的歌曲呢？如果需要，请报歌名！");
+                                AiuiController.getInstance().setAllowInterrupt(true);
                             }
                         }, new MediaPlayer.OnErrorListener() {
                             @Override
                             public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+                                AiuiController.getInstance().setAllowInterrupt(true);
                                 return false;
                             }
                         });
@@ -833,6 +856,7 @@ public class AiuiController {
      */
     public void setAutoWakeUp(boolean autoWakeUp) {
         isAutoWakeUp = autoWakeUp;
+
     }
 
     /**

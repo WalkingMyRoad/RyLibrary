@@ -2,10 +2,12 @@ package com.ist.rylibrary.base.util;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -13,8 +15,18 @@ import android.util.Xml;
 
 import com.ist.rylibrary.base.application.RyApplication;
 import com.ist.rylibrary.base.controller.SharedPreferencesController;
+import com.ist.rylibrary.base.listener.FaceAddErrorListener;
+import com.ist.rylibrary.base.listener.FaceCompareListener;
+import com.wewins.facelibrary.api.ApiConstants;
+import com.wewins.facelibrary.api.NewApiBase;
+import com.wewins.facelibrary.api.rr.RRBusinessApi;
+import com.wewins.facelibrary.utils.FileUtil;
+import com.wewins.facelibrary.utils.ImageUtil;
+import com.wewins.facelibrary.utils.Person;
 
+import org.apache.http.HttpStatus;
 import org.greenrobot.eventbus.EventBus;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xmlpull.v1.XmlSerializer;
@@ -206,14 +218,27 @@ public class ToolUtil {
      * @param fileName  文件姓名
      */
     public void writeTxtToFile(String strContent, String filePath, String fileName) {
-        // 生成文件夹之后，再生成文件，不然会出错
-        FileWriter fw = null;
         try{
             File file = new File(filePath);
             if(!file.exists()){
                 file.mkdirs();
             }
-            File fileTxt = new File(filePath+fileName);
+            writeTxtToFile(strContent,filePath+fileName);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    /**
+     * 将字符串写入到文本文件中
+     * @param strContent  文件内容
+     * @param filePath  文件完整路径路径
+     */
+    public void writeTxtToFile(String strContent, String filePath) {
+        // 生成文件夹之后，再生成文件，不然会出错
+        FileWriter fw = null;
+        try{
+//            makeRootDirectory(filePath);
+            File fileTxt = new File(filePath);
             if (!fileTxt.exists()) {
                 fileTxt.createNewFile();
             }
@@ -232,12 +257,25 @@ public class ToolUtil {
         }
     }
 
-    /**
-     * 读取文件的内容
-     * @param fileName 文件名
-     * @return
-     * @throws IOException
-     */
+    public static void makeRootDirectory(String filePath) {
+        File file = null;
+        try {
+            Log.i("ToolUtils","创建文件！");
+            file = new File(filePath);
+            if (!file.exists()) {
+                file.mkdir();
+            }
+        } catch (Exception e) {
+           e.printStackTrace();
+        }
+    }
+
+        /**
+         * 读取文件的内容
+         * @param fileName 全路径文件名
+         * @return
+         * @throws IOException
+         */
     public String readFileSdcardFile(String fileName) throws IOException {
         String resultStr = "";
         FileInputStream fis = null;
@@ -404,7 +442,11 @@ public class ToolUtil {
                 String matchchar = null;
                 for (int j = 0;j < cnArr.length;j++){
                     if(c == cnArr[j]){
-                        matchchar = String.valueOf(j);
+                        if(j == (cnArr.length-1)){
+                            matchchar = "2";
+                        }else{
+                            matchchar = String.valueOf(j);
+                        }
                     }
                 }
                 if(matchchar!=null){
@@ -454,12 +496,20 @@ public class ToolUtil {
         }
         return newNumber;
     }
+
+    /***
+     * 修改以后的单位
+     * @param chineseNumber 处理过的中文数字
+     * @return  纯数字
+     */
     private String dealCoArr(String chineseNumber){
         String newNumber = "";
+        //用于记录前期的数字
         StringBuffer str = new StringBuffer();
-        List<Integer> list = new ArrayList<>();
+        //每次修改的数字列表
+        List<Float> list = new ArrayList<>();
         try{
-            int number = 0;
+            float number = 0;
             for(int i = 0; i < chineseNumber.length(); i++){
                 char c = chineseNumber.charAt(i);
                 int matchchar = -1;
@@ -469,36 +519,108 @@ public class ToolUtil {
                     }
                 }
                 if(matchchar!=-1){
-                    int n = Integer.valueOf(str.toString());
-                    switch (matchchar){
-                        case 0:
-                            n = n * 10;
-                            break;
-                        case 1:
-                            n = n * 100;
-                            break;
-                        case 2:
-                            n = n * 1000;
-                            break;
-                        case 3:
-                            n = n * 10000;
-                            break;
-                        case 4:
-                            n = n * 100000000;
-                            break;
-                        default:
-                            break;
+                    if (str.length()>0){
+                        RyApplication.getLog().d("有原始数据 "+str);
+                        Float n = Float.valueOf(str.toString());
+                        switch (matchchar){
+                            case 0:
+                                n = n * 10;
+                                break;
+                            case 1:
+                                n = n * 100;
+                                break;
+                            case 2:
+                                n = n * 1000;
+                                break;
+                            case 3:
+                                n = n * 10000;
+                                break;
+                            case 4:
+                                n = n * 100000000;
+                                break;
+                            case 5:
+                                n = n * 1;
+                                break;
+                            case 6:
+                                n = n * 1;
+                                break;
+                            case 7:
+                                n = n * 1;
+                                break;
+                            case 8:
+                                n = n * 0.1f;
+                                break;
+                            case 9:
+                                n = n * 0.1f;
+                                break;
+                            case 10:
+                                n = n * 0.01f;
+                                break;
+                            default:
+                                break;
+                        }
+                        list.add(n);
+                        str = new StringBuffer();
+                    }else{
+                        if (list.size()>0){
+                            RyApplication.getLog().d("列表中有数据");
+                            str = new StringBuffer(String.valueOf(list.get(list.size()-1)));
+                            list.remove(list.size()-1);
+                        }else{
+                            RyApplication.getLog().d("列表中无数据");
+                            str = new StringBuffer("1");
+                        }
+                        RyApplication.getLog().d(str.toString());
+                        RyApplication.getLog().d(list.toString());
+                        Float n = Float.valueOf(str.toString());
+                        switch (matchchar){
+                            case 0:
+                                n = n * 10;
+                                break;
+                            case 1:
+                                n = n * 100;
+                                break;
+                            case 2:
+                                n = n * 1000;
+                                break;
+                            case 3:
+                                n = n * 10000;
+                                break;
+                            case 4:
+                                n = n * 100000000;
+                                break;
+                            case 5:
+                                n = n * 1;
+                                break;
+                            case 6:
+                                n = n * 1;
+                                break;
+                            case 7:
+                                n = n * 1;
+                                break;
+                            case 8:
+                                n = n * 0.1f;
+                                break;
+                            case 9:
+                                n = n * 0.1f;
+                                break;
+                            case 10:
+                                n = n * 0.01f;
+                                break;
+                            default:
+                                break;
+                        }
+                        list.add(n);
+                        str = new StringBuffer();
                     }
-                    list.add(n);
-                    str = new StringBuffer();
                 }else{
                     str.append(c);
                 }
             }
             if (str.length()>0){
-                list.add(Integer.valueOf(str.toString()));
+                list.add(Float.valueOf(str.toString()));
             }
-            for (int i:list) {
+            for (Float i:list) {
                 number +=i;
             }
             newNumber = String.valueOf(number);
@@ -508,9 +630,9 @@ public class ToolUtil {
         return newNumber;
     }
 
-    char[] cnArr = new char[]{'零','一','二','三','四','五','六','七','八','九'};
+    char[] cnArr = new char[]{'零','一','二','三','四','五','六','七','八','九','两'};
     char[] chArr = new char[]{'零','壹','贰','叁','肆','伍','陆','柒','捌','玖','拾'};
-    char[] coArr = new char[]{'十','百','千','万','亿'};
+    char[] coArr = new char[]{'十','百','千','万','亿','整','块','元','角','毛','分'};
 
     public String chineseNumber2Int(String chineseNumber){
         String cnNumber = dealCnArr(chineseNumber);
@@ -521,4 +643,208 @@ public class ToolUtil {
         RyApplication.getLog().d("第三次修改后的数字 "+coNumber);
         return coNumber;
     }
+
+    /**
+     * 新增人脸关系
+     * @param idcardFile  用户人像文件路径
+     * @param userId 用户姓名
+     */
+    public  void addFace(final String idcardFile,final String userId){
+        addFace(idcardFile,userId,null);
+    }
+
+    /**
+     * 新增人脸关系
+     * @param idcardFile
+     */
+    public void addFace(final String idcardFile,final String userId,final  FaceAddErrorListener listener){
+        if(idcardFile==null||idcardFile.equals("")){
+             if(listener!=null){
+                 listener.errorMessage("没有人脸头像！");
+             }
+            RyApplication.getLog().i("没有人脸头像！");
+            return;
+        }
+        RyApplication.getLog().i("新增人脸关系》》》图片路径："+idcardFile+";用户姓名："+userId);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    byte[] tmpImgData = ImageUtil.getScaledBitmapByteArray(idcardFile);
+                    long startTime1 = System.currentTimeMillis();
+                    RyApplication.getLog().i("开始上传人脸 "+startTime1);
+                    JSONObject objDetect = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).detectReturnFaceId(tmpImgData);
+                    //取得人脸数组
+                    if(objDetect==null){
+                        RyApplication.getLog().i("objDetect===null");
+                        if(listener!=null){
+                            listener.errorMessage("objDetect===null");
+                        }
+                        return;
+                    }
+                    long endTime1 = System.currentTimeMillis();
+                    RyApplication.getLog().i("开始上传人脸 "+(endTime1-startTime1));
+                    JSONObject faceJsonOjb = objDetect.getJSONArray("faces").getJSONObject(0);
+                    RyApplication.getLog().i("faceJsonOjb=="+faceJsonOjb.toString());
+                    String image_id=objDetect.getString("image_id");
+                    String faceId = faceJsonOjb.getString("face_token");
+                    String value = null;//性别
+                    if(faceJsonOjb.has("attributes")){
+                        JSONObject attributes =faceJsonOjb.getJSONObject("attributes");
+                        if(attributes.has("gender")){
+                            JSONObject gender = attributes.getJSONObject("gender");
+                            if(gender.has("value")){
+                                value = gender.getString("value");
+                            }
+                        }
+                    }
+                    RyApplication.getLog().i("faceId=="+faceId+";image_id=="+image_id);
+                    if(listener!=null){
+                        listener.onComplete(faceId,value);
+                    }
+//                    Thread.sleep(100);
+                    //将Face Token保存到FaceSet中
+                    long startTime2 = System.currentTimeMillis();
+                    RyApplication.getLog().i("将Face Token保存到FaceSet中 "+startTime2);
+                    JSONObject objAddFaceResult = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).facesetAddface(SharedPreferencesController.getInstance().getFacesetToken(), faceId);
+                    if (objAddFaceResult.getInt("apiResult") != HttpStatus.SC_OK) {
+
+                    }
+//                    Thread.sleep(100);
+                    //保存用户的个人信息
+                    JSONObject objSetUserIdResult = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).setUserId(faceId, userId);
+                    boolean  bResult = RRBusinessApi.getInstance().saveFaceToRRSvr("", faceId, image_id, null,"",value,"0");
+                    long endTime2 = System.currentTimeMillis();
+                    RyApplication.getLog().i("将Face Token保存到FaceSet中 "+(endTime2-startTime2));
+                    Thread.sleep(3*1000);
+//                    FileUtil.deleteFile(idcardFile);
+                }catch (Exception e){
+                    e.printStackTrace();
+                    if(listener!=null){
+                        listener.errorMessage("addFace某部分产生错误");
+                    }
+                    //已经成功的，就删除文件
+                } finally {
+                    FileUtil.deleteFile(idcardFile);
+                }
+            }
+        }).start();
+
+    }
+
+    public void compareFace(final byte[] imgData1, final byte[] imgData2, final FaceCompareListener listener){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    JSONObject objDetect = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).compareFace(imgData1,imgData2);
+                    Log.d("ToolUtil","confidence = " + objDetect);
+                    if(objDetect.has("confidence")){
+                        Float confidence = Float.valueOf(objDetect.getString("confidence"));
+                        Log.d("ToolUtil","confidence = "+confidence);
+                        if(confidence>60){
+                            listener.onResult(true);
+                        }else{
+                            listener.onResult(false);
+                        }
+                    }else{
+                        listener.onResult(false);
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    public void removeFace(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    JSONObject objDetect = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).facesetGetdetail(SharedPreferencesController.getInstance().getFacesetToken());
+                    if(objDetect.has("face_tokens")){
+                        String face_tokens = objDetect.getString("face_tokens");
+                        face_tokens = face_tokens.replaceAll("\"","");
+                        face_tokens = face_tokens.replaceAll("\\[","");
+                        face_tokens = face_tokens.replaceAll("\\]","");
+                        RyApplication.getLog().d("获取faceset组中的face_token列表 "+face_tokens);
+                        if(face_tokens!=null && face_tokens.length()>0){
+                            JSONObject object = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).facesetRemoveface(SharedPreferencesController.getInstance().getFacesetToken(),face_tokens);
+                            RyApplication.getLog().d("删除faceset中的列表 "+object.toString());
+                        }
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+
+    public void creatFaceSet(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    JSONObject objDetect = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).createFaceset("f99646b32922eadae6003f8099abf7e3");
+                    Log.d("ToolUtil",objDetect.getString("faceset_token"));
+                    if (objDetect.has("faceset_token")){
+                        Log.d("ToolUtil",objDetect.getString("faceset_token"));
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private String  TAG = "ToolUtil";
+
+    public void addPicture(Person person){
+        new addPictrueTask().execute(person);
+    }
+
+    public class addPictrueTask extends AsyncTask<Person,String,Boolean> {
+        @Override
+        protected Boolean doInBackground(Person... persons) {
+            Log.i(TAG,"图片开始上传");
+            boolean bResult = false;
+            try {
+                if(persons!=null){
+                    Log.i(TAG,"存在人物");
+                    for (Person son:persons) {
+                        Log.i(TAG,"遍历"+son);
+                        byte[] tmpImgData = ImageUtil.getScaledBitmapByteArray(son.getImgPath());
+                        JSONObject objDetect = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).detectReturnFaceId(tmpImgData);
+                        Log.i(TAG,"接口返回  =="+objDetect);
+                        if(objDetect != null){
+                            //取得人脸数组
+                            JSONObject faceJsonOjb = objDetect.getJSONArray("faces").getJSONObject(0);
+                            String image_id=objDetect.getString("image_id");
+                            String faceId = faceJsonOjb.getString("face_token");
+                            Log.i(TAG,"face_token=="+faceId+";image_id=="+image_id);
+                            //将Face Token保存到FaceSet中
+                            Log.i(TAG,"将Face Token保存到FaceSet中 "+SharedPreferencesController.getInstance().getFacesetToken());
+                            JSONObject objAddFaceResult = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).facesetAddface(SharedPreferencesController.getInstance().getFacesetToken(), faceId);
+                            if (objAddFaceResult.getInt("apiResult") != HttpStatus.SC_OK) {
+                                Log.i(TAG,"将Face Token保存到FaceSet中失败" + objAddFaceResult.getInt("apiResult"));
+                            }
+                            Log.i(TAG,"保存用户信息");
+                            JSONObject objSetUserIdResult = ((NewApiBase) Class.forName("com.wewins.facelibrary.api.faceplusfreev3.FacePlusFreeV3Api").newInstance()).setUserId(faceId, son.getPersonName());
+                            if (objSetUserIdResult.getInt("apiResult") != HttpStatus.SC_OK) {
+                                Log.i(TAG,"保存用户信息失败");
+                            }
+                            Log.i(TAG,"保存用户信息成功");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            bResult = true;
+            return bResult;
+        }
+    }
+
 }

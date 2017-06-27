@@ -3,6 +3,7 @@ package com.ist.rylibrary.base.service;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -11,6 +12,7 @@ import com.ist.rylibrary.base.application.RyApplication;
 import com.ist.rylibrary.base.controller.ChassisController;
 import com.ist.rylibrary.base.event.ChassisMessageEvent;
 import com.ist.rylibrary.base.util.ToolUtil;
+import com.renying.m4.AiuiObj;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -25,6 +27,8 @@ public class ChassisService extends Service {
 
     private static Intent sIntent;
 
+    private Handler mHandler;
+
     /***
      * 打开service
      * @param context
@@ -38,6 +42,7 @@ public class ChassisService extends Service {
      * @param context
      */
     public static void finishService(Context context){
+        Log.i("1221122","关闭了红外的服务！");
         if(sIntent!=null){
             context.stopService(sIntent);
             sIntent = null;
@@ -54,7 +59,14 @@ public class ChassisService extends Service {
     public void onCreate() {
         super.onCreate();
         ToolUtil.getInstance().loadEventBus(this);
-        ChassisController.getInstance().connect(this);
+        ChassisController.getInstance().setEther(this);
+        mHandler = new Handler();
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                ChassisController.getInstance().connect(ChassisService.this);
+            }
+        },2000);
     }
 
     @Override
