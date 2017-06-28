@@ -21,5 +21,8 @@ Step 2. Add the dependency
 	dependencies {
 	        compile 'com.github.WalkingMyRoad:rylibrary:1.0'
 	}
+	dependencies {
+	        compile 'com.github.WalkingMyRoad:rylibrary:2.0'
+	}
 Copy
 Share this release:
